@@ -66,6 +66,12 @@ pub fn update_tray(app: &AppHandle, snapshot: &Snapshot) {
         }
     } else if snapshot.state.connection == Connection::Disconnected {
         ""
+    } else if snapshot.state.error.is_some() {
+        if zh {
+            "重连需要处理"
+        } else {
+            "Reconnect needs attention"
+        }
     } else {
         if zh {
             "自动重连已开启"

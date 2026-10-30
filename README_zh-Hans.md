@@ -24,6 +24,7 @@ Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任�
 和 Microsoft Edge WebView2，以及 [Vite+](https://viteplus.dev/guide/)。
 
 ```powershell
+#requires -Version 7.0
 git clone https://github.com/Hezric/Homing.git
 cd Homing
 vp install --frozen-lockfile
@@ -72,6 +73,7 @@ Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-
 ## 预览与参与
 
 ```powershell
+#requires -Version 7.0
 vp run dev
 ```
 

@@ -6,7 +6,7 @@ export default defineConfig({
     rules: { "vite-plus/prefer-vite-plus-imports": "error" },
     options: { typeAware: true, typeCheck: true },
   },
-  optimizeDeps: { exclude: ['linen-ui'] },
+  optimizeDeps: { exclude: ["linen-ui"] },
   clearScreen: false,
   server: { strictPort: true, watch: { ignored: ["**/src-tauri/**", "**/.local-state/**"] } },
   build: { target: "es2022" },

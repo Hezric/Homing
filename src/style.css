@@ -1,19 +1,85 @@
-@import url('/fonts/noto-ui.css');
-@import 'linen-ui/style.css';
-#empty { padding:0 4px; color:var(--secondary); font-size:12px; }
-@media (prefers-reduced-motion:reduce) { *,*::after { transition:none !important; } }
-@media (max-height:480px) {
-  .native .settings h2 { margin-top:4px; }
-  .native .settings h2:first-child { margin-top:6px; }
-  .native .about { margin-top:6px; }
+@import url("/fonts/noto-ui.css");
+@import "linen-ui/style.css";
+#current-status,
+#current-status .copy-current {
+  white-space: normal;
 }
-.row-label { color:var(--secondary); font-size:13px; flex:none; }
-.row-value { text-align:right; font-size:13px; }
-.mode { max-width:65%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.profile-row { display:flex; gap:8px; }
-.profile { min-width:0; flex:1; height:32px; border-radius:4px; background:var(--card); border:1px solid var(--cardb); border-bottom:2px solid var(--accent); padding:0 10px; color:var(--text); font:inherit; user-select:text; -webkit-user-select:text; }
-.profile[aria-invalid=true] { border-bottom-color:var(--error); }
-.profile-hint, .setup { font-size:12px; line-height:18px; color:var(--secondary); margin:6px 0 0; }
-.profile-error { font-size:12px; color:var(--error); margin:6px 0 0; }
-#error { max-height:96px; overflow-y:auto; flex-shrink:1; }
-#current-status .copy-current { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#current-status .copy-current {
+  display: block;
+  overflow: visible;
+}
+#empty {
+  padding: 0 4px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::after {
+    transition: none !important;
+  }
+}
+@media (max-height: 480px) {
+  .native .settings h2 {
+    margin-top: 4px;
+  }
+  .native .settings h2:first-child {
+    margin-top: 6px;
+  }
+  .native .about {
+    margin-top: 6px;
+  }
+}
+.row-label {
+  color: var(--secondary);
+  font-size: 13px;
+  flex: none;
+}
+.row-value {
+  text-align: right;
+  font-size: 13px;
+}
+.mode {
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-row {
+  display: flex;
+  gap: 8px;
+}
+.profile {
+  min-width: 0;
+  flex: 1;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--card);
+  border: 1px solid var(--cardb);
+  border-bottom: 2px solid var(--accent);
+  padding: 0 10px;
+  color: var(--text);
+  font: inherit;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.profile[aria-invalid="true"] {
+  border-bottom-color: var(--error);
+}
+.profile-hint,
+.setup {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--secondary);
+  margin: 6px 0 0;
+}
+.profile-error {
+  font-size: 12px;
+  color: var(--error);
+  margin: 6px 0 0;
+}
+#error {
+  max-height: 96px;
+  overflow-y: auto;
+  flex-shrink: 1;
+}
