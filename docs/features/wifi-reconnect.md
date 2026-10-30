@@ -82,4 +82,4 @@ four taskbar edges, negative monitor coordinates and 100–200% scaling.
 
 Native connection changes require a separate safe hardware session. Never perform
 those tests on a network carrying remote sessions. Browser screenshots verify
-light/dark, English/Chinese, connected, reconnecting, disconnected, unreadable and paused states, and settings without network changes.
+light/dark, English/Chinese, connected, reconnecting, can’t-reach, unreadable and paused states, and settings without network changes.
