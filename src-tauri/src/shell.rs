@@ -29,8 +29,8 @@ fn tray_state(state: &crate::core::State) -> &'static str {
         "paused"
     } else {
         match state.connection {
-            Connection::Connected => "connected",
-            Connection::Reconnecting => "reconnecting",
+            Connection::Connected if !state.profile.is_empty() => "connected",
+            Connection::Connected | Connection::Reconnecting => "disconnected",
             Connection::Disconnected | Connection::Unreadable => "disconnected",
         }
     }
@@ -102,4 +102,37 @@ pub fn update_tray(app: &AppHandle, snapshot: &Snapshot) {
         snapshot.state.pause_minutes,
         status,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{core::Reconnector, settings::Settings};
+
+    #[test]
+    fn tray_marks_only_an_observed_target_as_watched() {
+        let mut state = Reconnector::new(Settings::default()).state(0);
+        for connection in [
+            Connection::Connected,
+            Connection::Reconnecting,
+            Connection::Disconnected,
+            Connection::Unreadable,
+        ] {
+            state.connection = connection;
+            state.profile.clear();
+            state.pause_remaining = 0;
+            assert_eq!(tray_state(&state), "disconnected");
+            state.profile = "Home Wi-Fi".into();
+            assert_eq!(
+                tray_state(&state),
+                if connection == Connection::Connected {
+                    "connected"
+                } else {
+                    "disconnected"
+                }
+            );
+            state.pause_remaining = 1;
+            assert_eq!(tray_state(&state), "paused");
+        }
+    }
 }

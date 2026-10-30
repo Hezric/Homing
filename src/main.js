@@ -58,7 +58,6 @@ if (!native && ["light", "dark"].includes(params.get("theme")))
 const root = document.querySelector("#app");
 root.innerHTML = flyout({
   name: "Homing",
-  icon: icon("wifi_1", 20),
   card: statusCard(""),
   main: `<section id="network-view"><div class="device-heading"><h1 id="reconnect-label"></h1><span id="mode" class="mode"></span></div><section class="device-list" aria-labelledby="reconnect-label"><div class="device-row"><span class="device-icon">${icon("wifi_1", 20)}</span><span id="target-label" class="row-label"></span><span class="device-name row-value" id="target"></span></div><div class="device-row"><span class="device-icon">${icon("arrow_sync", 16)}</span><span id="last-label" class="row-label"></span><time class="device-name row-value" id="last"></time></div></section><div id="setup-wrap" class="message" aria-hidden="true"><div><p id="setup" class="setup"></p></div></div></section>`,
   settings: `<h2><label id="profile-label" for="profile"></label></h2><div class="profile-row"><input id="profile" class="profile" type="text" maxlength="255" autocomplete="off" spellcheck="false" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button></div><p id="profile-hint" class="profile-hint"></p><div id="profile-error-wrap" class="message" aria-hidden="true"><div><p id="profile-error" class="profile-error" role="alert"></p></div></div>${pauseSettings()}${languageSettings("Homing", version, icon("open", 24))}`,
@@ -93,7 +92,6 @@ function render() {
     document.documentElement.dataset.theme = state.dark ? "dark" : "light";
   }
   root.querySelector(".flyout").setAttribute("aria-label", t.app);
-  root.querySelector(".header").classList.toggle("inactive", inactive);
   root.querySelector(".badge").classList.toggle("inactive", inactive);
   setContent("current-icon", icon(paused ? "pause" : "wifi_1"), true);
   const current = state.current || (state.connection === "unreadable" ? t.unreadable : t.none);
