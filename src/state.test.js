@@ -20,10 +20,17 @@ test('profile validation preserves names and rejects line breaks',()=>{
 });
 test('current Wi-Fi connection is distinct from target reconnect state',()=>{
  assert.equal(connectionLabel({...mockState('disconnected'),current:'Away Wi-Fi'},'en'),'Connected');
- assert.equal(connectionLabel({...mockState('connected'),current:null},'zh'),'已断开');
+ assert.equal(connectionLabel({...mockState('disconnected'),current:null},'zh'),'无法连接 Home Wi-Fi · 自动重试中');
  assert.equal(connectionLabel(mockState('reconnecting'),'en'),'Reconnecting…');
 });
 test('unreadable Wi-Fi state is distinct from disconnected',()=>{
  assert.equal(connectionLabel({...mockState('disconnected'),connection:'unreadable'},'en'),"Can't read Wi-Fi state");
  assert.equal(connectionLabel({...mockState('disconnected'),connection:'unreadable'},'zh'),'无法读取 Wi-Fi 状态');
+});
+
+test('unreachable target explains automatic retry and missing configuration',()=>{
+ assert.equal(connectionLabel(mockState('disconnected'),'en'),"Can't reach Home Wi-Fi · retrying automatically");
+ assert.equal(connectionLabel(mockState('disconnected'),'zh'),'无法连接 Home Wi-Fi · 自动重试中');
+ assert.equal(connectionLabel({...mockState('disconnected'),profile:''},'en'),'Choose a network to keep');
+ assert.equal(connectionLabel({...mockState('disconnected'),profile:''},'zh'),'选择要保持连接的网络');
 });

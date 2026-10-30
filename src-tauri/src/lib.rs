@@ -25,17 +25,15 @@ fn update(
 pub fn run() {
     use tauri::Manager;
     let result = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            shell::open_flyout(app);
-        }))
+        .plugin(linen_tray::single_instance())
         .invoke_handler(tauri::generate_handler![
             snapshot,
             update,
-            shell::resize_flyout,
-            shell::present_flyout,
-            shell::prepare_flyout,
-            shell::dismiss_flyout,
-            shell::open_project
+            linen_tray::resize_flyout,
+            linen_tray::present_flyout,
+            linen_tray::prepare_flyout,
+            linen_tray::dismiss_flyout,
+            linen_tray::open_project
         ])
         .setup(|app| {
             shell::install(app.handle())?;

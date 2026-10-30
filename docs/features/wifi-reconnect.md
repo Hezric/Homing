@@ -26,7 +26,7 @@ loop and extra sixty-second wait after command failure govern Homing.
 - For a known absent target, request `netsh wlan connect name=<profile>`. Use
   separate process arguments and an absolute system executable path.
 - An accepted request enters reconnecting and schedules verification after one
-  second. Command failure enters disconnected and schedules retry after 61 seconds.
+  second. Command failure enters the can’t-reach state and schedules retry after 61 seconds.
 - Notifications refresh observed state but never shorten a pending retry cooldown.
   Observing the target cancels retry timing immediately. A healthy connection has
   no polling timer when notifications are available. Last reconnect records accepted
@@ -67,35 +67,9 @@ The current-network card reports the observed Windows network connection separat
 target profile's reconnect state. A connection to another network remains visibly
 connected while the target is retrying.
 
-The Earmuff frontend and shell were copied and adapted. The flyout uses its local
-Inter/Noto Sans SC fonts, theme/accent tokens, header, current card, list, footer,
-settings swap, pause presets and custom field. English and Simplified Chinese
-follow Windows display language unless explicitly selected. Theme and taskbar
-artwork refresh on system color notifications.
+The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.1.0/docs/features/tray-shell.md) owns the tray lifecycle, placement, DWM styling and motion; its UI package supplies the shell, status card, pause, language and about controls. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
 
-The tray has connected, reconnecting, disconnected, and paused artwork in light and
-dark variants. Every state carries a Fluent knockout badge: sync for connected,
-reconnecting and disconnected, pause while paused. Reconnecting dims only the
-Wi-Fi glyph to 40%. Each ICO holds 16/20/24/32/48 px entries, selected according
-to monitor scaling. Small-taskbar artwork uses 75% of the same bitmap canvas.
-The worker refreshes taskbar size/theme and monitor DPI every second without
-querying Wi-Fi; `TaskbarSize` governs newer Windows builds, with `TaskbarSi`
-as the legacy fallback. `IconSizePreference` affects app buttons, not tray glyphs. Left-click
-opens the flyout; right-click offers open, pause/resume and quit. Opening a second
-instance opens the existing instance's flyout.
-
-The undecorated tool window centers on the tray icon, follows its monitor, taskbar
-edge and DPI, and clamps inside the work area. Its transparent viewport stays
-stable while content height animates, with a native region bounding drawing and
-hit testing. The panel stays anchored above the taskbar. Presentation primes
-WebView2 at zero alpha after fonts are ready, then fades/slides in over 200 ms;
-focus loss or Esc animates out before destroying the webview. Settings, messages,
-header/text, pause, toggles and hover/press changes use short ease-out transitions.
-Windows Animation effects off and reduced-motion preferences make changes instant.
-Webview creation runs outside synchronous Windows tray event handlers to avoid
-blocking the shell. Focus-loss dismissal begins after first presentation so hidden
-WebView2 initialization can complete. Startup registration is external. Browser mock mode cannot call Windows Wi-Fi;
-its preview controls are documented in the README.
+Connected uses solid Wi-Fi arcs and a loop mark. “Can't reach” uses full-contrast outline arcs with the same loop; reconnecting fills the arcs over a repeating short sequence. Pause replaces the loop with two bars. No state uses opacity or a no-internet slash. A missing target says “Choose a network to keep”; an absent target names it and explains automatic retries, while unreadable observations retain the existing error text. The current-network card remains distinct from the target's reconnect state. Inter and common assets come from the tagged UI package; Chinese font subsets include both shared and app text.
 
 ## Verification
 

@@ -10,34 +10,21 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  verify:
+    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.0
+    with:
+      manifest: src-tauri/Cargo.toml
+      frontend: true
+      build-command: vp exec tauri build --ci --no-bundle -- --locked
   test:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
+    needs: verify
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-      - run: npm ci
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
-      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
-      - run: npm test
-      - name: Build frontend and app
-        run: npm run tauri -- build --ci --no-bundle -- --locked
+      - run: echo 'All checks passed'
   policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - uses: commit-check/commit-check-action@v2

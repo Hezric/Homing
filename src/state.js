@@ -21,4 +21,12 @@ export function validProfile(value) { return value.trim().length>0 && value.leng
 export function pauseLabel(minutes, language) {
   return language==='zh' ? minutes%60===0 ? `暂停 ${minutes/60} 小时` : `暂停 ${minutes} 分钟` : minutes%60===0 ? `Pause ${minutes/60} hr` : `Pause ${minutes} min`;
 }
-export const connectionLabel = (state, language) => text[language][state.connection === 'unreadable' ? 'unreadable' : state.current ? 'connected' : state.connection === 'reconnecting' ? 'reconnecting' : 'disconnected'];
+export function reconnectLabel(state,language) {
+  const t=text[language];
+  if(state.connection==='unreadable')return t.unreadable;
+  if(!state.profile)return language==='zh'?'选择要保持连接的网络':'Choose a network to keep';
+  if(state.connection==='connected')return t.watching;
+  if(state.connection==='reconnecting')return t.reconnecting;
+  return language==='zh'?`无法连接 ${state.profile} · 自动重试中`:`Can't reach ${state.profile} · retrying automatically`;
+}
+export const connectionLabel=(state,language)=>state.connection==='unreadable'?text[language].unreadable:state.current?text[language].connected:reconnectLabel(state,language);
