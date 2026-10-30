@@ -1,0 +1,14 @@
+{
+  "version": "0.8.4",
+  "description": "Generate license notices from Cargo dependency graphs",
+  "homepage": "https://github.com/EmbarkStudios/cargo-about",
+  "license": "MIT OR Apache-2.0",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/EmbarkStudios/cargo-about/releases/download/0.8.4/cargo-about-0.8.4-x86_64-pc-windows-msvc.tar.gz",
+      "hash": "d5c38fb914bbad57c6a7d58c4847315bc3fe11efbe4fb51b3c515f997a56ceb7",
+      "extract_dir": "cargo-about-0.8.4-x86_64-pc-windows-msvc"
+    }
+  },
+  "bin": "cargo-about.exe"
+}

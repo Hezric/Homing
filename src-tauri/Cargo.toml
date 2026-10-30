@@ -1,0 +1,32 @@
+[package]
+name = "homing"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "A quiet way back to your Wi-Fi."
+repository = "https://github.com/Hezric/Homing"
+
+[lib]
+name = "homing"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.61"
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_Graphics_Gdi", "Win32_NetworkManagement_WiFi", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_NetworkListManager", "Win32_System_Com", "Win32_System_Registry", "Win32_Globalization", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "UI_ViewManagement", "Foundation"] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+strip = true
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
