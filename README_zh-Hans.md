@@ -14,6 +14,9 @@ Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任�
 
 ## 安装
 
+使用 Scoop 时，先运行 `scoop bucket add zephyr https://github.com/Hezric/ScoopZephyr`，
+再运行 `scoop install zephyr/homing`。登录启动指向 Scoop 的 `current` 目录下的程序，升级后无需改路径。
+
 从[发布页](https://github.com/Hezric/Homing/releases/latest)下载 Windows x64 便携包，
 对照 `SHA256SUMS` 校验后解压，并保留 WebView2。保存目标后即启用自动重连。
 登录启动交给已有启动管理器。
@@ -68,7 +71,7 @@ Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-
 显示与匹配使用该原始名称，不受 Windows 添加的连接配置名称后缀影响。无法读取状态时，托盘和面板显示**无法读取 Wi-Fi 状态**。
 此时只重试观测，不会连接；只有确认目标网络未连接时才会请求重连。
 
-“无法连接”表示目标网络未连接，程序会自动重试；没有目标时提示选择网络，“正在重连”表示已发送请求、等待结果。实心表示工作中，空心表示暂不可用，两条竖线表示暂停；所有托盘状态保持完整对比度。
+“无法连接”表示目标网络未连接，程序会自动重试；没有目标时提示选择网络，“正在重连”表示已发送请求、等待结果。循环标记表示已观测到目标连接，感叹号表示目标未连接、未配置或状态不可读，两条竖线表示暂停；所有托盘状态保持完整对比度。
 
 ## 预览与参与
 

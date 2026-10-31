@@ -18,6 +18,10 @@ and another tray click dismiss it; Animation effects off makes changes instant.
 
 ## Install
 
+With Scoop, run `scoop bucket add zephyr https://github.com/Hezric/ScoopZephyr`
+and `scoop install zephyr/homing`. Use the executable under Scoop's `current`
+directory for login startup so upgrades keep the same path.
+
 Download the Windows x64 portable archive from [Releases](https://github.com/Hezric/Homing/releases/latest),
 verify it against `SHA256SUMS`, and extract it. Keep WebView2 installed. Saving a target enables automatic reconnect.
 Login startup remains with your startup manager.
@@ -83,8 +87,9 @@ Homing retries observation without connecting until it knows the target is absen
 
 **Can't reach** means the saved target is absent and retries continue automatically.
 An empty target asks you to choose a network; **Reconnecting** means a request is
-awaiting confirmation. Solid artwork means working, outline means waiting, and
-pause uses two bars. All tray states retain full contrast.
+awaiting confirmation. A loop mark means the target connection was observed;
+an exclamation mark covers absent, unconfigured or unreadable targets, and pause
+uses two bars. All tray states retain full contrast.
 
 ## Preview and contribute
 
