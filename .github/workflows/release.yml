@@ -5,85 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing signed tag to retry after repairing the workflow
+        description: Existing signed tag to retry
         required: true
 permissions:
   contents: write
 jobs:
   release:
-    runs-on: windows-latest
-    env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: refs/tags/${{ inputs.tag || github.ref_name }}
-      - name: Validate release source
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          test "$(git cat-file -t "$RELEASE_TAG")" = tag
-          gh api "repos/$GITHUB_REPOSITORY/git/tags/$(git rev-parse "$RELEASE_TAG")" --jq '.verification.verified' | grep -qx true
-          test "$(git rev-parse "$RELEASE_TAG^{}")" = "$(git rev-parse HEAD)"
-          git merge-base --is-ancestor HEAD origin/main
-          subject=$(git log -1 --format=%s)
-          [[ "$subject" == "chore(release): $RELEASE_TAG" || "$subject" == "chore(release): $RELEASE_TAG (#"*")" ]]
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-      - uses: MinoruSekine/setup-scoop@v4
-      - name: Install packaging tools
-        shell: pwsh
-        run: |
-          #requires -Version 7.0
-          scoop install yq
-          scoop install ./scripts/scoop/cargo-about.json
-      - name: Check and build
-        shell: pwsh
-        run: |
-          #requires -Version 7.0
-          npm ci
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cargo test --manifest-path src-tauri/Cargo.toml --locked
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          npm test
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          npm run tauri -- build --ci --no-bundle -- --locked
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $version = yq -r '.version' package.json
-          if ("v$version" -ne $env:RELEASE_TAG) { throw 'Tag and package versions differ' }
-      - name: Package
-        shell: pwsh
-        run: ./scripts/package.ps1
-      - name: Publish archive and notes
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          #requires -Version 7.0
-          $archives = @(Get-ChildItem -LiteralPath dist -Filter '*.zip')
-          $checksums = $archives | ForEach-Object { "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
-          $checksums | Set-Content -Encoding utf8NoBOM dist/SHA256SUMS
-          $version = $env:RELEASE_TAG.Substring(1)
-          $sections = [regex]::Split([IO.File]::ReadAllText('CHANGELOG.md'), '(?m)^## ')
-          $notes = $sections | Where-Object { $_.StartsWith("[$version]") } | Select-Object -First 1
-          if (!$notes) { throw 'Version has no changelog section' }
-          [IO.File]::WriteAllText('dist/release-notes.md', "## $notes", [Text.UTF8Encoding]::new($false))
-          gh release create $env:RELEASE_TAG $archives.FullName dist/SHA256SUMS --verify-tag --title $env:RELEASE_TAG --notes-file dist/release-notes.md
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+    uses: Hezric/Linen/.github/workflows/windows-release.yml@v0.1.1
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
