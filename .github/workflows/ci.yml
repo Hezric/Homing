@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.3
+    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.4
     with:
       manifest: src-tauri/Cargo.toml
       frontend: true
@@ -39,7 +39,7 @@ jobs:
       - run: test '${{ needs.verify.result }}' = success
       - run: test '${{ needs.browser.result }}' = success
   policy-check:
-    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.3
+    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.4
   policy:
     needs: policy-check
     if: always()
