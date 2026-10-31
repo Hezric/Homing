@@ -8,7 +8,7 @@ Homing 守候你已保存的 Windows Wi-Fi。已观测的网络名称中找不�
 Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定时器处理。
 
 小巧的托盘面板展示当前网络、重连状态与上次重连请求的时间。齿轮后的设置可填写
-配置名称、选择 1–720 分钟的暂停时长，以及英语或简体中文。主题与强调色跟随
+网络、选择 1–720 分钟的暂停时长，以及英语或简体中文。主题与强调色跟随
 Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任务栏尺寸。
 任务栏图标的面板居中显示在图标上方，隐藏图标则从屏幕侧边滑入通知区角落。阴影与圆角由 Windows 绘制；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
 
@@ -51,10 +51,12 @@ Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-
 
 ## 使用
 
-单击托盘图标开关面板，右键可打开、暂停或恢复、退出。进入齿轮设置，填写
-**已保存的 Wi-Fi 配置名称**并保存，自动重连即刻生效。Windows 必须已经保存
-该配置及其凭据。Homing 不会创建配置、扫描网络或索要密码。
-
+单击托盘图标开关面板，右键可打开、暂停或恢复、退出。进入齿轮设置，输入
+**系统 Wi-Fi 中显示的网络名**搜索已保存的网络，也可手动输入；选好后点击**保存**。
+筛选、选择和离开输入框都不会自动保存。**使用当前网络**可直接保存当前连接的网络；
+无法可靠对应已保存的网络时，按钮会禁用并说明原因。Homing 不会请求位置权限。
+Windows 必须已经保存该网络。格式错误、已删除或无法唯一对应的同名网络不会改变原目标。
+保存后自动重连即刻生效。Homing 不会创建配置、扫描网络或索要密码。
 名称匹配保留原工具的规则：在已观测的 Windows 网络名称中进行
 区分大小写的子串查找。例如 `Home` 也会匹配 `MyHome5G`。找不到时，以不经过命令
 解释器的方式运行 `netsh wlan connect name=<profile>`。请求被接受后，等待一秒再
@@ -64,7 +66,7 @@ Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-
 暂停预设为 15、30、60、120 分钟，默认为 60 分钟；自定义时长在回车或离开输入框时
 保存。修改时长不会改变正在进行的暂停。重启后恢复重连，暂停本身不会断开 Wi-Fi。
 
-设置保存在 `%APPDATA%\Homing\Homing.ini`，配置名称以 UTF-8 十六进制编码存储，
+设置保存在 `%APPDATA%\Homing\Homing.ini`，网络名称与内部连接配置使用 UTF-8 十六进制编码存储，
 保留中文、空格与 INI 标点。更改以原子方式保存。配置缺失或损坏时不重连；损坏的
 原文件会保留到你主动保存设置。错误会显示在面板中。WLAN 通知不可用时，会暂时定时检查并
 重试注册；通知恢复后停止轮询。Wi-Fi 适配器状态和原始 Windows 网络描述不需要位置服务权限；
@@ -84,6 +86,8 @@ vp run dev
 浏览器使用模拟数据，不会更改 Windows Wi-Fi。`lang` 可选 `en` 或 `zh`，`theme`
 可选 `light` 或 `dark`，`state` 可选 `connected`、`reconnecting`、`disconnected`
 、`unreadable` 或 `paused`；`view=settings` 显示设置页。
+`profiles` 可设为 `unavailable`、`empty`、`no-current`、`current-mismatch`、`ambiguous` 或 `stale`，模拟配置列表异常。
+运行 `vp exec playwright install chromium` 和 `vp run test:browser`，可在无头浏览器中验证选择交互与暂停栏边界。
 
 [参与贡献](CONTRIBUTING.md) · [行为与检查](docs/features/wifi-reconnect.md)
 · [MIT 许可](LICENSE) · [第三方声明](THIRD-PARTY-NOTICES.md)

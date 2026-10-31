@@ -285,3 +285,31 @@ fn unavailable_notifications_use_legacy_observation_timer_and_stop_after_recover
     unconfigured.reconcile(&mut wifi, || 1000, 1001);
     assert_eq!(unconfigured.deadline(1000), None);
 }
+
+#[test]
+fn system_network_name_matches_while_connection_requests_use_internal_profile_alias() {
+    let mut guard = Reconnector::new(Settings {
+        profile: "Hidden alias".into(),
+        network: "Home Wi-Fi".into(),
+        ..Settings::default()
+    });
+    let mut wifi = Simulated {
+        network: Network {
+            current: Some("Home Wi-Fi".into()),
+            interface_text: "Home Wi-Fi".into(),
+        },
+        ..Default::default()
+    };
+    guard.reconcile(&mut wifi, || 0, 0);
+    assert_eq!(guard.state(0).connection, Connection::Connected);
+    assert!(wifi.requests.is_empty());
+    assert_eq!(guard.state(0).target_name.as_deref(), Some("Home Wi-Fi"));
+    let payload = serde_json::to_string(&guard.state(0)).unwrap();
+    assert!(!payload.contains("Hidden alias"));
+    wifi.network = Network {
+        current: Some("Away Wi-Fi".into()),
+        interface_text: "Away Wi-Fi".into(),
+    };
+    guard.reconcile(&mut wifi, || 1, 0);
+    assert_eq!(wifi.requests, vec!["Hidden alias"]);
+}

@@ -25,7 +25,8 @@ use windows::{
 #[derive(Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum Action {
-    SetProfile { profile: String },
+    SetNetwork { network: String },
+    UseCurrentNetwork,
     SetLanguage { language: String },
     SetPauseMinutes { minutes: u16 },
     TogglePause,
@@ -44,6 +45,7 @@ pub enum Message {
     Retry,
     AppearanceChanged,
     Request(Option<Action>, Option<Sender<Result<Snapshot, String>>>),
+    Networks(Sender<Result<crate::networks::NetworkChoices, String>>),
     Stop,
 }
 pub struct Worker {
@@ -52,13 +54,30 @@ pub struct Worker {
 }
 impl Worker {
     pub fn request(&self, action: Option<Action>) -> Result<Snapshot, String> {
+        let wait_for_save = matches!(
+            &action,
+            Some(Action::SetNetwork { .. } | Action::UseCurrentNetwork)
+        );
         let (send, receive) = mpsc::channel();
         self.sender
             .send(Message::Request(action, Some(send)))
             .map_err(|_| "Wi-Fi watcher is unavailable")?;
+        // A queued save may commit after a timeout, so report only its actual result.
+        if wait_for_save {
+            return receive.recv().map_err(|_| "Wi-Fi watcher is unavailable")?;
+        }
         receive
             .recv_timeout(Duration::from_secs(5))
             .map_err(|_| "Wi-Fi watcher did not respond")?
+    }
+    pub fn networks(&self) -> Result<crate::networks::NetworkChoices, String> {
+        let (send, receive) = mpsc::channel();
+        self.sender
+            .send(Message::Networks(send))
+            .map_err(|_| "networksUnavailable")?;
+        receive
+            .recv_timeout(Duration::from_secs(5))
+            .map_err(|_| "networksUnavailable")?
     }
     pub fn stop(&self) {
         let _ = self.sender.send(Message::Stop);
@@ -126,7 +145,14 @@ fn run_loop(
     wifi: &mut WindowsWifi,
     colors: &UISettings,
 ) {
-    let (settings, mut settings_error) = Settings::load(path);
+    let (mut settings, mut settings_error) = Settings::load(path);
+    if settings.network.is_empty() && !settings.profile.is_empty() {
+        if let Ok(catalog) = crate::core::WifiBackend::saved_networks(wifi) {
+            settings.network = catalog
+                .name_for_profile(&settings.profile)
+                .unwrap_or_default();
+        }
+    }
     let mut guard = Reconnector::new(settings);
     let clock = Instant::now();
     let mut appearance = Appearance::read(colors);
@@ -138,6 +164,11 @@ fn run_loop(
         let mut reconcile = false;
         match next {
             Message::Stop => break,
+            Message::Networks(reply) => {
+                let _ = reply.send(
+                    crate::core::WifiBackend::saved_networks(wifi).map(|catalog| catalog.choices()),
+                );
+            }
             Message::NetworkChanged | Message::Retry => reconcile = true,
             Message::AppearanceChanged => appearance = Appearance::read(colors),
             Message::Request(action, response) => {
@@ -145,6 +176,10 @@ fn run_loop(
                 if let Some(action) = action {
                     let mut settings = guard.settings.clone();
                     let persist = !matches!(&action, Action::TogglePause);
+                    let target = matches!(
+                        &action,
+                        Action::SetNetwork { .. } | Action::UseCurrentNetwork
+                    );
                     let result = match action {
                         Action::SetLanguage { language } => {
                             if ["system", "zh", "en"].contains(&language.as_str()) {
@@ -162,10 +197,10 @@ fn run_loop(
                                 Err("Pause duration must be 1 to 720 whole minutes".into())
                             }
                         }
-                        Action::SetProfile { profile } => {
-                            crate::settings::validate_profile(&profile)
-                                .map(|_| settings.profile = profile)
+                        Action::SetNetwork { network } => {
+                            settings.set_target(Some(&network), wifi, path)
                         }
+                        Action::UseCurrentNetwork => settings.set_target(None, wifi, path),
                         Action::TogglePause => {
                             if guard.state(now).pause_remaining > 0 {
                                 guard.resume();
@@ -175,10 +210,18 @@ fn run_loop(
                             Ok(())
                         }
                     };
-                    match result.and_then(|_| if persist { settings.save(path) } else { Ok(()) }) {
+                    match result.and_then(|_| {
+                        if persist && !target {
+                            settings.save(path)
+                        } else {
+                            Ok(())
+                        }
+                    }) {
                         Ok(()) => {
                             if persist {
-                                if settings.profile != guard.settings.profile {
+                                if settings.profile != guard.settings.profile
+                                    || settings.network != guard.settings.network
+                                {
                                     guard.reset_retry();
                                 }
                                 guard.settings = settings;
@@ -245,5 +288,31 @@ fn run_loop(
                 }
             }
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn explicit_save_waits_for_the_worker_result_instead_of_reporting_an_uncertain_timeout() {
+        let (sender, receive) = mpsc::channel();
+        let server = std::thread::spawn(move || {
+            if let Message::Request(_, Some(reply)) = receive.recv().unwrap() {
+                std::thread::sleep(Duration::from_millis(5100));
+                let _ = reply.send(Err("networkNotSaved".into()));
+            } else {
+                panic!("expected explicit update");
+            }
+        });
+        let worker = Worker {
+            sender,
+            thread: Mutex::new(None),
+        };
+        let result = worker.request(Some(Action::SetNetwork {
+            network: "Home Wi-Fi".into(),
+        }));
+        server.join().unwrap();
+        assert!(matches!(result, Err(error) if error == "networkNotSaved"));
     }
 }

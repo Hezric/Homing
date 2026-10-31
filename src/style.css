@@ -56,13 +56,18 @@
   border-radius: 4px;
   background: var(--card);
   border: 1px solid var(--cardb);
-  border-bottom: 2px solid var(--accent);
   padding: 0 10px;
   color: var(--text);
   font: inherit;
   user-select: text;
   -webkit-user-select: text;
 }
+.profile:focus {
+  outline: none;
+  border-bottom: 2px solid var(--accent);
+  box-shadow: none;
+}
+.profile[aria-expanded="true"] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .profile[aria-invalid="true"] {
   border-bottom-color: var(--error);
 }
@@ -82,4 +87,60 @@
   max-height: 96px;
   overflow-y: auto;
   flex-shrink: 1;
+}
+
+.profile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+.settings .profile-heading h2 { margin: 0; }
+.profile-heading .button { height: 24px; padding: 0 8px; font-size: 12px; }
+.button:disabled { opacity: .55; }
+.profile-popup {
+  position: fixed;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--cardb);
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 6px 12px #0003;
+  overflow: auto;
+  font: inherit;
+  font-size: 13px;
+}
+#profile-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rail) transparent;
+}
+.profile-option {
+  position: relative;
+  padding: 7px 10px;
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 32px;
+}
+.profile-option:hover, .profile-option[aria-selected="true"] { background: var(--hover); }
+.profile-option[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+#profile-list-status { margin: 4px 6px; font-size: 12px; line-height: 18px; color: var(--secondary); }
+@media (forced-colors: active) {
+  .profile:focus { border-bottom-color: Highlight; }
+  .profile-option[aria-selected="true"] { outline: 1px solid Highlight; outline-offset: -1px; }
 }

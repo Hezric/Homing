@@ -1,4 +1,5 @@
 pub mod core;
+pub mod networks;
 #[cfg(windows)]
 mod runtime;
 pub mod settings;
@@ -14,11 +15,19 @@ fn snapshot(worker: tauri::State<'_, runtime::Worker>) -> Result<runtime::Snapsh
 }
 #[cfg(windows)]
 #[tauri::command]
-fn update(
+async fn update(
     action: runtime::Action,
     worker: tauri::State<'_, runtime::Worker>,
 ) -> Result<runtime::Snapshot, String> {
     worker.request(Some(action))
+}
+
+#[cfg(windows)]
+#[tauri::command]
+fn saved_networks(
+    worker: tauri::State<'_, runtime::Worker>,
+) -> Result<networks::NetworkChoices, String> {
+    worker.networks()
 }
 
 #[cfg(windows)]
@@ -28,6 +37,7 @@ pub fn run() {
         .plugin(linen_tray::single_instance())
         .invoke_handler(tauri::generate_handler![
             snapshot,
+            saved_networks,
             update,
             linen_tray::resize_flyout,
             linen_tray::present_flyout,

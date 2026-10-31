@@ -9,7 +9,7 @@ from the observed network names, Homing asks Windows to reconnect. WLAN notifica
 watch the connection; timers handle retries and the end of a pause.
 
 Its small tray flyout shows the current network, reconnect state, and last
-reconnect request. The gear opens settings for the saved profile, a pause of
+reconnect request. The gear opens settings for the saved network, a pause of
 1–720 minutes, and English or Simplified Chinese. Theme and accent follow Windows.
 The loop-marked tray icon distinguishes Homing from Windows Wi-Fi and follows taskbar size.
 The flyout centers above a taskbar icon, or slides into the notification corner
@@ -60,8 +60,13 @@ Verify the installed Skill's path and complete contents too.
 ## Use
 
 Click the tray icon to toggle Homing; right-click for open, pause or resume, and quit.
-Open the gear, enter a **saved Wi-Fi profile name**, and save. Windows must already
-have that profile and its credentials. Saving enables reconnect immediately.
+Open the gear and search by the **Wi-Fi network name shown in Windows**, or type
+that name manually. Select a suggestion, then press **Save**. Filtering, selection
+and leaving the field do not save. **Use current network** saves the currently
+connected network in one step when it can be matched reliably to a saved entry;
+it explains when it is unavailable. Homing never requests Location access.
+Windows must already have the network saved. Invalid, removed or ambiguous network
+names leave the previous target unchanged. Saving enables reconnect immediately.
 Homing never creates profiles, scans for networks, or asks for passwords.
 
 Matching preserves the original tool's case-sensitive substring rule in observed
@@ -75,7 +80,7 @@ Pause presets are 15, 30, 60, and 120 minutes. Custom durations save on Enter or
 focus loss. The default is 60 minutes. Editing the duration preserves an active
 pause deadline; restarting resumes reconnect. Pause does not disconnect Wi-Fi.
 
-Settings live in `%APPDATA%\Homing\Homing.ini`. The profile is UTF-8 hex-encoded
+Settings live in `%APPDATA%\Homing\Homing.ini`. The network name and internal connection identity are UTF-8 hex-encoded
 so Unicode, spaces, and INI punctuation round-trip safely. Changes save atomically.
 Missing or malformed settings leave reconnect off; malformed files remain intact
 until an explicit settings save. Errors appear in the flyout. If WLAN notifications
@@ -101,7 +106,10 @@ vp run dev
 Open `http://127.0.0.1:1420/?lang=en&theme=light&state=connected`.
 Browser preview uses mock data and never changes Windows Wi-Fi. Choose `lang=en`
 or `lang=zh`, `theme=light` or `theme=dark`, and `state=connected`, `reconnecting`,
-`disconnected`, `unreadable`, or `paused`. Use `view=settings` for the settings view.
+`disconnected`, `unreadable`, or `paused`. Use `view=settings` for the settings view. Add `profiles=unavailable`, `empty`,
+`no-current`, `current-mismatch`, `ambiguous` or `stale` for saved-network failure scenarios.
+Run `vp exec playwright install chromium` and `vp run test:browser` for headless
+picker interaction and footer-boundary checks.
 
 [Contributing](CONTRIBUTING.md) · [Behavior and checks](docs/features/wifi-reconnect.md)
 · [MIT license](LICENSE) · [Third-party notices](THIRD-PARTY-NOTICES.md)
