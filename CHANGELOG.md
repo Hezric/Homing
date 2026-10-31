@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0]
+
+### Features
+
+- add saved network picker (#9)
+
 ## [0.1.1]
 
 ### Fixes
