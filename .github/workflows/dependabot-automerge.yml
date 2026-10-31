@@ -7,4 +7,4 @@ permissions:
   pull-requests: write
 jobs:
   enable:
-    uses: Hezric/Linen/.github/workflows/dependabot-automerge.yml@v0.1.1
+    uses: Hezric/Linen/.github/workflows/dependabot-automerge.yml@v0.1.3
