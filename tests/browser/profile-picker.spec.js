@@ -179,3 +179,65 @@ test("compact geometry, long names and keyboard scrolling remain accessible", as
   await input.press("Tab");
   await expect(list).toBeHidden();
 });
+
+test("a slow saved target reply preserves a later draft and reports its committed target", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.isTauri = true;
+    const callbacks = {};
+    let id = 0;
+    const bridge = window.__TEST_WIFI__ = {
+      pending: null,
+      state: { current: "Home Wi-Fi", targetName: "Home Wi-Fi", configured: true,
+        connection: "connected", pauseRemaining: 0, pauseMinutes: 60, lastReconnect: null,
+        languageMode: "en", language: "en", dark: false, accent: "#005fb8", accentInk: "#fff" },
+      complete(ok) {
+        const pending = this.pending;
+        this.pending = null;
+        if (!ok) return pending.reject("networkNotSaved");
+        this.state = { ...this.state, targetName: pending.action.network ?? "Home Wi-Fi" };
+        callbacks[this.listener]({ payload: this.state });
+        pending.resolve(this.state);
+      },
+    };
+    window.__TAURI_INTERNALS__ = {
+      transformCallback(fn) { callbacks[++id] = fn; return id; },
+      async invoke(command, args) {
+        if (command === "plugin:event|listen") { bridge.listener = args.handler; return 1; }
+        if (command === "snapshot") return bridge.state;
+        if (command === "saved_networks") return { names: ["Home Wi-Fi", "Studio 10", "Office Wi-Fi"], current: "Home Wi-Fi" };
+        if (command === "resize_flyout") return { limit: 620 };
+        if (command === "update") return new Promise((resolve, reject) => { bridge.pending = { action: args.action, resolve, reject }; });
+        if (["prepare_flyout", "present_flyout", "dismiss_flyout"].includes(command)) return;
+        throw Error(`Unexpected simulated command ${command}`);
+      },
+    };
+  });
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveClass(/presented/);
+  await page.locator("#gear").click();
+  const input = page.getByRole("combobox");
+  await input.fill("Studio 10");
+  await page.locator("#save-profile").click();
+  await page.waitForFunction(() => window.__TEST_WIFI__.pending !== null);
+  await input.fill("Office Wi-Fi");
+  await page.waitForTimeout(5100);
+  await expect(input).toHaveValue("Office Wi-Fi");
+  await expect(page.locator("#profile-error")).toBeHidden();
+  await expect(page.locator("#save-profile")).toBeDisabled();
+  await page.evaluate(() => window.__TEST_WIFI__.complete(true));
+  await expect(page.locator("#target")).toHaveText("Studio 10");
+  await expect(page.locator("#save-profile")).toBeEnabled();
+  await expect(input).toHaveValue("Office Wi-Fi");
+  await page.locator("#save-profile").click();
+  await page.waitForFunction(() => window.__TEST_WIFI__.pending !== null);
+  await page.evaluate(() => window.__TEST_WIFI__.complete(true));
+  await expect(page.locator("#target")).toHaveText("Office Wi-Fi");
+  await expect(input).toHaveValue("Office Wi-Fi");
+  await input.fill("Not saved");
+  await page.locator("#save-profile").click();
+  await page.waitForFunction(() => window.__TEST_WIFI__.pending !== null);
+  await page.evaluate(() => window.__TEST_WIFI__.complete(false));
+  await expect(page.locator("#profile-error")).toBeVisible();
+  await expect(input).toHaveValue("Not saved");
+  await expect(page.locator("#target")).toHaveText("Office Wi-Fi");
+});

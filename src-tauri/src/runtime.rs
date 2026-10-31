@@ -145,15 +145,9 @@ fn run_loop(
     wifi: &mut WindowsWifi,
     colors: &UISettings,
 ) {
-    let (mut settings, mut settings_error) = Settings::load(path);
-    if settings.network.is_empty() && !settings.profile.is_empty() {
-        if let Ok(catalog) = crate::core::WifiBackend::saved_networks(wifi) {
-            settings.network = catalog
-                .name_for_profile(&settings.profile)
-                .unwrap_or_default();
-        }
-    }
+    let (settings, mut settings_error) = Settings::load(path);
     let mut guard = Reconnector::new(settings);
+    guard.restore_legacy_target_name(wifi);
     let clock = Instant::now();
     let mut appearance = Appearance::read(colors);
     let mut next = Message::NetworkChanged;

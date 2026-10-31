@@ -313,3 +313,45 @@ fn system_network_name_matches_while_connection_requests_use_internal_profile_al
     guard.reconcile(&mut wifi, || 1, 0);
     assert_eq!(wifi.requests, vec!["Hidden alias"]);
 }
+
+#[test]
+fn restoring_a_legacy_display_name_does_not_change_its_matching_or_settings() {
+    use homing::networks::{SavedNetwork, SavedNetworks};
+    struct LegacyWifi {
+        requests: Vec<String>,
+    }
+    impl WifiBackend for LegacyWifi {
+        fn saved_networks(&mut self) -> Result<SavedNetworks, String> {
+            Ok(SavedNetworks {
+                networks: vec![SavedNetwork {
+                    name: "Home-5G".into(),
+                    profile: "Home".into(),
+                }],
+                current: None,
+            })
+        }
+        fn inspect(&mut self) -> Result<Network, String> {
+            Ok(Network {
+                current: Some("MyHomeGuest".into()),
+                interface_text: "MyHomeGuest".into(),
+            })
+        }
+        fn connect(&mut self, profile: &str) -> Result<(), String> {
+            self.requests.push(profile.into());
+            Ok(())
+        }
+    }
+    let settings = Settings::parse("[Settings]\nProfileHex=486f6d65\n").unwrap();
+    let original = settings.clone();
+    let mut guard = Reconnector::new(settings);
+    let mut wifi = LegacyWifi { requests: vec![] };
+    guard.restore_legacy_target_name(&mut wifi);
+    guard.reconcile(&mut wifi, || 0, 0);
+    assert_eq!(guard.state(0).connection, Connection::Connected);
+    assert!(wifi.requests.is_empty());
+    assert_eq!(guard.settings, original);
+    assert_eq!(guard.state(0).target_name.as_deref(), Some("Home-5G"));
+    assert!(!serde_json::to_string(&guard.state(0))
+        .unwrap()
+        .contains("\"Home\""));
+}

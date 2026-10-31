@@ -24,7 +24,7 @@ async fn update(
 
 #[cfg(windows)]
 #[tauri::command]
-fn saved_networks(
+async fn saved_networks(
     worker: tauri::State<'_, runtime::Worker>,
 ) -> Result<networks::NetworkChoices, String> {
     worker.networks()
@@ -89,4 +89,17 @@ pub fn run() {
 #[cfg(not(windows))]
 pub fn run() {
     eprintln!("Homing requires Windows.");
+}
+
+#[cfg(all(test, windows))]
+mod command_tests {
+    #[test]
+    fn saved_network_query_is_an_async_command() {
+        fn require_async<'a, F>(_: impl FnOnce(tauri::State<'a, super::runtime::Worker>) -> F)
+        where
+            F: std::future::Future<Output = Result<super::networks::NetworkChoices, String>> + Send,
+        {
+        }
+        require_async(super::saved_networks);
+    }
 }

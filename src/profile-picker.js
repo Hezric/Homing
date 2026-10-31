@@ -18,7 +18,8 @@ export function createProfilePicker(container, { load, save }) {
     saved = "",
     dirty = false,
     opened = false,
-    active = -1;
+    active = -1,
+    revision = 0;
   let catalog = null,
     loadError = false,
     loading = null,
@@ -124,6 +125,7 @@ export function createProfilePicker(container, { load, save }) {
     }
   }
   function select(name) {
+    revision++;
     input.value = name;
     dirty = true;
     errorKey = "";
@@ -140,12 +142,15 @@ export function createProfilePicker(container, { load, save }) {
     saving = true;
     errorKey = "";
     draw();
+    const submittedRevision = revision;
     const result = await save(useCurrent ? null : input.value);
     saving = false;
     if (result.ok) {
       saved = result.profile;
-      dirty = false;
-      input.value = saved;
+      if (revision === submittedRevision) {
+        dirty = false;
+        input.value = saved;
+      }
     } else {
       const code = String(result.error?.message || result.error);
       errorKey = [
@@ -168,6 +173,7 @@ export function createProfilePicker(container, { load, save }) {
     refresh();
   });
   input.addEventListener("input", () => {
+    revision++;
     dirty = true;
     errorKey = "";
     active = -1;

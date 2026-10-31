@@ -72,7 +72,8 @@ by Windows, never the internal saved-profile alias. `WlanEnumInterfaces` and
 flags to extract only SSID metadata. XML parsing prohibits DTDs and external
 entities. Full XML and key material are never logged or retained; a plaintext key
 is never requested. Non-UTF-8 SSIDs that cannot be represented reliably are omitted.
-Lookup runs on the existing Wi-Fi worker and never scans or connects.
+Lookup runs on the existing Wi-Fi worker and never scans or connects. The saved-network
+command waits asynchronously, leaving native window callbacks responsive.
 
 Every explicit save refreshes the catalog, validates a nonblank network name of
 at most 32 UTF-8 bytes, and resolves it to an actual saved profile. If multiple
@@ -84,7 +85,9 @@ pending until its actual result instead of reporting a timeout before a queued
 save may commit. `NetworkHex` stores the chosen visible
 name and `ProfileHex` retains the internal connection identity. Existing files
 without `NetworkHex` remain readable; the worker derives a display name from saved
-metadata only when the mapping is unique. Unavailable legacy names are explained
+metadata only when the mapping is unique. This derived name is display-only: legacy
+profile substring matching stays unchanged until an explicit target save.
+Unavailable legacy names are explained
 without showing an internal alias. There is no automatic settings rewrite.
 
 The current-network shortcut first correlates the connected adapter's NLM network
@@ -114,7 +117,8 @@ the Save column. The input has a single bottom accent only while focused and
 returns to neutral on blur. The popup stays above the existing footer and scrolls
 internally without increasing panel height. Empty and failed lookups explain their
 state, and Retry is keyboard-accessible. The current-network action saves in one
-step only after the worker repeats its reliable mapping.
+step only after the worker repeats its reliable mapping. A pending save updates the
+committed target when it completes but preserves any draft edited after submission.
 ## Flyout and shell
 
 The current-network card reports the observed Windows network connection separately from the
