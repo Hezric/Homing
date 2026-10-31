@@ -296,7 +296,6 @@ if (native) {
 }
 render();
 await document.fonts.ready;
-motionReady = true;
 reducedMotion.addEventListener("change", () => {
   if (reducedMotion.matches) document.getAnimations().forEach((animation) => animation.finish());
   requestAnimationFrame(fit);
@@ -307,6 +306,7 @@ if (native) {
   await new Promise(requestAnimationFrame);
   await new Promise(requestAnimationFrame);
   await invoke("present_flyout");
+  document.body.classList.add("presented");
   new ResizeObserver(fit).observe(root.querySelector(".flyout"));
 } else if (!reducedMotion.matches)
   root.querySelector(".flyout").animate(
@@ -316,6 +316,7 @@ if (native) {
     ],
     motion,
   );
+motionReady = true;
 // Only the visible countdown ticks; native expiration belongs to the worker.
 setInterval(() => {
   if (state.pauseRemaining > 0) {
