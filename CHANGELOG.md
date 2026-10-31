@@ -1,23 +1,17 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.0]
 
-### Changed
+### Features
 
-- Distinguish every tray state with a Fluent badge and follow Default/Small taskbar sizing.
-- Center the flyout on its tray icon and animate appearance, dismissal, content and controls.
-- Show and match the original network description without Windows profile-label suffixes.
+- Keep a saved Windows Wi-Fi profile connected with notification-driven observation and the established retry timing.
+- Show connection state, the last reconnect request and timed pauses in an English or Simplified Chinese flyout.
+- Share the native shell, UI and build tooling through the signed Linen v0.1.1 release.
+- Distinguish a watched connection, an absent or unreadable target and a pause with full-contrast tray marks.
 
-### Fixed
+### Fixes
 
-- Read Wi-Fi state without Location permission using adapter status and Windows network names.
-- Suppress reconnects when Wi-Fi state is unreadable and show that state in the tray and flyout.
-- Open the flyout asynchronously and defer dismissal until presentation so hidden WebView2 initialization can finish.
-
-## [0.1.0] - 2026-10-30
-
-### Added
-
-- Notification-driven reconnect for a saved Windows Wi-Fi profile.
-- A tray flyout with connection state, last reconnect request and timed pause.
-- English and Simplified Chinese, system appearance, and browser mock preview.
+- Read Wi-Fi state without Location permission and match original network descriptions without Windows profile-label suffixes.
+- Suppress reconnect requests while Wi-Fi state is unreadable or no target is configured.
+- Open with the correct theme background, native rounded corners and DWM shadow.
+- Toggle and dismiss the flyout consistently, release its webview after closing, and dock hidden-tray flyouts with matching entry and exit motion.
