@@ -6,6 +6,9 @@ pub struct Network {
     pub interface_text: String,
 }
 pub trait WifiBackend {
+    fn saved_networks(&mut self) -> Result<crate::networks::SavedNetworks, String> {
+        Err("networksUnavailable".into())
+    }
     fn notification_error(&self) -> Option<String> {
         None
     }
@@ -24,7 +27,10 @@ pub enum Connection {
 #[serde(rename_all = "camelCase")]
 pub struct State {
     pub current: Option<String>,
+    #[serde(skip_serializing)]
     pub profile: String,
+    pub configured: bool,
+    pub target_name: Option<String>,
     pub connection: Connection,
     pub pause_remaining: u64,
     pub pause_minutes: u16,
@@ -34,6 +40,7 @@ pub struct State {
 }
 pub struct Reconnector {
     pub settings: Settings,
+    legacy_target_name: Option<String>,
     current: Option<String>,
     connection: Connection,
     pause_until: Option<u64>,
@@ -46,6 +53,7 @@ impl Reconnector {
     pub fn new(settings: Settings) -> Self {
         Self {
             settings,
+            legacy_target_name: None,
             current: None,
             connection: Connection::Disconnected,
             pause_until: None,
@@ -53,6 +61,13 @@ impl Reconnector {
             observation_at: None,
             last_reconnect: None,
             error: None,
+        }
+    }
+    pub fn restore_legacy_target_name(&mut self, wifi: &mut impl WifiBackend) {
+        if self.settings.network.is_empty() && !self.settings.profile.is_empty() {
+            if let Ok(catalog) = wifi.saved_networks() {
+                self.legacy_target_name = catalog.name_for_profile(&self.settings.profile);
+            }
         }
     }
     pub fn reconcile(&mut self, wifi: &mut impl WifiBackend, now: impl Fn() -> u64, unix: u64) {
@@ -80,7 +95,12 @@ impl Reconnector {
             self.error = observation_error;
             return;
         }
-        if network.interface_text.contains(&self.settings.profile) {
+        let target = if self.settings.network.is_empty() {
+            &self.settings.profile
+        } else {
+            &self.settings.network
+        };
+        if network.interface_text.contains(target) {
             self.connection = Connection::Connected;
             self.retry_at = notifications_missing.then(|| now() + 1000);
             self.error = observation_error;
@@ -123,6 +143,10 @@ impl Reconnector {
         State {
             current: self.current.clone(),
             profile: self.settings.profile.clone(),
+            configured: !self.settings.profile.is_empty(),
+            target_name: (!self.settings.network.is_empty())
+                .then(|| self.settings.network.clone())
+                .or_else(|| self.legacy_target_name.clone()),
             connection: self.connection,
             pause_remaining: self
                 .pause_until

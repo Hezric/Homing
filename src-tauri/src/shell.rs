@@ -83,11 +83,22 @@ pub fn update_tray(app: &AppHandle, snapshot: &Snapshot) {
     let retry;
     let status = if status.is_empty() {
         retry = if zh {
-            format!("无法连接 {} · 自动重试中", snapshot.state.profile)
+            format!(
+                "无法连接 {} · 自动重试中",
+                snapshot
+                    .state
+                    .target_name
+                    .as_deref()
+                    .unwrap_or("已保存的网络")
+            )
         } else {
             format!(
                 "Can't reach {} · retrying automatically",
-                snapshot.state.profile
+                snapshot
+                    .state
+                    .target_name
+                    .as_deref()
+                    .unwrap_or("saved network")
             )
         };
         &retry

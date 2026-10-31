@@ -1,4 +1,5 @@
 import { version } from "../package.json";
+import { createProfilePicker } from "./profile-picker.js";
 import {
   createMotion,
   fitPanel,
@@ -14,10 +15,10 @@ import {
   localeFor,
   mockState,
   mockUpdate,
+  mockSavedNetworks,
   text,
   parsePauseMinutes,
   pauseLabel,
-  validProfile,
   connectionLabel,
   reconnectLabel,
 } from "./state.js";
@@ -39,7 +40,13 @@ const systemLanguage = localeFor(
 );
 let language = systemLanguage;
 let state = native
-  ? { ...mockState("disconnected"), current: null, profile: "", lastReconnect: null }
+  ? {
+      ...mockState("disconnected"),
+      current: null,
+      configured: false,
+      targetName: null,
+      lastReconnect: null,
+    }
   : mockState(
       ["connected", "reconnecting", "disconnected", "paused", "unreadable"].includes(
         params.get("state"),
@@ -49,8 +56,7 @@ let state = native
     );
 let settingsOpen = !native && params.get("view") === "settings",
   localError = "",
-  pauseInvalid = false,
-  profileInvalid = false;
+  pauseInvalid = false;
 let motionReady = false;
 document.body.classList.toggle("native", native);
 if (!native && ["light", "dark"].includes(params.get("theme")))
@@ -60,8 +66,15 @@ root.innerHTML = flyout({
   name: "Homing",
   card: statusCard(""),
   main: `<section id="network-view"><div class="device-heading"><h1 id="reconnect-label"></h1><span id="mode" class="mode"></span></div><section class="device-list" aria-labelledby="reconnect-label"><div class="device-row"><span class="device-icon">${icon("wifi_1", 20)}</span><span id="target-label" class="row-label"></span><span class="device-name row-value" id="target"></span></div><div class="device-row"><span class="device-icon">${icon("arrow_sync", 16)}</span><span id="last-label" class="row-label"></span><time class="device-name row-value" id="last"></time></div></section><div id="setup-wrap" class="message" aria-hidden="true"><div><p id="setup" class="setup"></p></div></div></section>`,
-  settings: `<h2><label id="profile-label" for="profile"></label></h2><div class="profile-row"><input id="profile" class="profile" type="text" maxlength="255" autocomplete="off" spellcheck="false" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button></div><p id="profile-hint" class="profile-hint"></p><div id="profile-error-wrap" class="message" aria-hidden="true"><div><p id="profile-error" class="profile-error" role="alert"></p></div></div>${pauseSettings()}${languageSettings("Homing", version, icon("open", 24))}`,
+  settings: `<div id="profile-picker"></div>${pauseSettings()}${languageSettings("Homing", version, icon("open", 24))}`,
   gear: icon("settings", 24),
+});
+const profilePicker = createProfilePicker(document.querySelector("#profile-picker"), {
+  load: () => (native ? invoke("saved_networks") : mockSavedNetworks(params.get("profiles"))),
+  save: (profile) =>
+    change(
+      profile === null ? { type: "useCurrentNetwork" } : { type: "setNetwork", network: profile },
+    ),
 });
 const { setContent, setText, animateView, reducedMotion, motion } = createMotion(
   root,
@@ -84,7 +97,7 @@ function render() {
   if (!native) language = state.languageMode === "system" ? systemLanguage : state.languageMode;
   const t = text[language],
     paused = state.pauseRemaining > 0,
-    inactive = paused || state.connection !== "connected" || !state.profile;
+    inactive = paused || state.connection !== "connected" || !state.configured;
   document.documentElement.lang = language === "zh" ? "zh-Hans" : "en";
   if (state.accent) {
     document.documentElement.style.setProperty("--accent", state.accent);
@@ -107,7 +120,7 @@ function render() {
     "mode",
     paused
       ? t.paused
-      : !state.profile
+      : !state.configured
         ? t.off
         : state.connection === "connected"
           ? t.watching
@@ -119,8 +132,8 @@ function render() {
   );
   document.querySelector("#mode").title = reconnectLabel(state, language);
   setText("target-label", t.target);
-  setText("target", state.profile || "—");
-  document.querySelector("#target").title = state.profile;
+  setText("target", state.targetName || (state.configured ? t.targetUnavailable : "—"));
+  document.querySelector("#target").title = state.targetName || "";
   setText("last-label", t.last);
   const date = state.lastReconnect ? new Date(state.lastReconnect * 1000) : null;
   setText(
@@ -139,16 +152,11 @@ function render() {
     : t.never;
   if (date) document.querySelector("#last").dateTime = date.toISOString();
   setText("setup", reconnectLabel(state, language));
-  setMessage("setup", !state.profile || (!!state.current && state.connection === "disconnected"));
-  setText("profile-label", t.profile);
-  setText("profile-hint", t.profileHint);
-  setText("save-profile", t.save);
-  const profile = document.querySelector("#profile");
-  if (document.activeElement !== profile && !profileInvalid) profile.value = state.profile;
-  profile.setAttribute("aria-invalid", String(profileInvalid));
-  const profileError = document.querySelector("#profile-error");
-  setMessage("profile-error", profileInvalid);
-  setText(profileError, t.profileError);
+  setMessage(
+    "setup",
+    !state.configured || (!!state.current && state.connection === "disconnected"),
+  );
+  profilePicker.sync(state.targetName || "", language);
   setText("pause-for-label", t.pauseFor);
   setText("minutes-unit", t.minutes);
   setText("language-label", t.language);
@@ -192,18 +200,28 @@ let pending = Promise.resolve();
 function change(action) {
   pending = pending.then(async () => {
     localError = "";
+    let result;
     try {
-      state = native ? await invoke("update", { action }) : mockUpdate(state, action);
+      state = native
+        ? await invoke("update", { action })
+        : mockUpdate(state, action, params.get("profiles"));
       if (native) language = state.language;
-    } catch {
-      localError = text[language].failed;
+      result = { ok: true, profile: state.targetName };
+    } catch (error) {
+      if (!["setNetwork", "useCurrentNetwork"].includes(action.type))
+        localError = text[language].failed;
+      result = { ok: false, error };
     }
     render();
+    return result;
   });
+  return pending;
 }
 document.querySelector("#pause").addEventListener("click", () => change({ type: "togglePause" }));
 document.querySelector("#gear").addEventListener("click", () => {
   settingsOpen = !settingsOpen;
+  if (settingsOpen) profilePicker.open();
+  else profilePicker.close();
   render();
 });
 const minutesInput = document.querySelector("#pause-minutes");
@@ -230,19 +248,6 @@ for (const button of root.querySelectorAll("[data-language]"))
   button.addEventListener("click", () =>
     change({ type: "setLanguage", language: button.dataset.language }),
   );
-function saveProfile() {
-  const profile = document.querySelector("#profile").value;
-  profileInvalid = !validProfile(profile);
-  if (!profileInvalid) change({ type: "setProfile", profile });
-  render();
-}
-document.querySelector("#save-profile").addEventListener("click", saveProfile);
-document.querySelector("#profile").addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    saveProfile();
-  }
-});
 document.querySelector("#github").addEventListener("click", (event) => {
   if (native) {
     event.preventDefault();
@@ -295,6 +300,7 @@ if (native) {
   }
 }
 render();
+if (settingsOpen) profilePicker.open();
 await document.fonts.ready;
 reducedMotion.addEventListener("change", () => {
   if (reducedMotion.matches) document.getAnimations().forEach((animation) => animation.finish());

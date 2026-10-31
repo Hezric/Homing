@@ -2,6 +2,7 @@ use std::{fs, io::Write, path::Path};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Settings {
     pub profile: String,
+    pub network: String,
     pub language: String,
     pub pause_minutes: u16,
 }
@@ -9,6 +10,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             profile: String::new(),
+            network: String::new(),
             language: "system".into(),
             pause_minutes: 60,
         }
@@ -19,12 +21,47 @@ pub fn validate_profile(profile: &str) -> Result<(), String> {
         || profile.contains(['\0', '\r', '\n'])
         || profile.encode_utf16().count() > 255
     {
-        Err("Enter a saved Wi-Fi profile name (1–255 characters).".into())
+        Err("The saved network connection information is invalid.".into())
+    } else {
+        Ok(())
+    }
+}
+pub fn validate_network(name: &str) -> Result<(), String> {
+    if name.trim().is_empty() || name.contains(['\0', '\r', '\n']) || name.len() > 32 {
+        Err("networkInvalid".into())
     } else {
         Ok(())
     }
 }
 impl Settings {
+    pub fn set_target(
+        &mut self,
+        network: Option<&str>,
+        wifi: &mut impl crate::core::WifiBackend,
+        path: &Path,
+    ) -> Result<(), String> {
+        if let Some(network) = network {
+            validate_network(network)?;
+        }
+        let saved = wifi.saved_networks().map_err(|_| "networksUnavailable")?;
+        let selected = match network {
+            Some(network) => saved.resolve(network)?,
+            None => saved
+                .current
+                .as_ref()
+                .filter(|current| saved.networks.contains(current))
+                .cloned()
+                .ok_or("currentNetworkUnavailable")?,
+        };
+        validate_network(&selected.name)?;
+        validate_profile(&selected.profile).map_err(|_| "networkNotSaved")?;
+        let mut next = self.clone();
+        next.profile = selected.profile;
+        next.network = selected.name;
+        next.save(path)?;
+        *self = next;
+        Ok(())
+    }
     pub fn parse(text: &str) -> Result<Self, String> {
         let mut settings = Self::default();
         let mut section = "";
@@ -41,7 +78,7 @@ impl Settings {
                 continue;
             }
             match key.trim() {
-                "ProfileHex" => {
+                "ProfileHex" | "NetworkHex" => {
                     let value = value.trim();
                     if !value.is_ascii() || !value.len().is_multiple_of(2) {
                         return Err("Invalid profile encoding".into());
@@ -51,10 +88,17 @@ impl Settings {
                         .map(|i| u8::from_str_radix(&value[i..i + 2], 16))
                         .collect::<Result<Vec<_>, _>>()
                         .map_err(|_| "Invalid profile encoding")?;
-                    settings.profile =
-                        String::from_utf8(bytes).map_err(|_| "Invalid profile encoding")?;
-                    if !settings.profile.is_empty() {
-                        validate_profile(&settings.profile)?;
+                    let value = String::from_utf8(bytes).map_err(|_| "Invalid profile encoding")?;
+                    if key.trim() == "ProfileHex" {
+                        if !value.is_empty() {
+                            validate_profile(&value)?;
+                        }
+                        settings.profile = value;
+                    } else {
+                        if !value.is_empty() {
+                            validate_network(&value)?;
+                        }
+                        settings.network = value;
                     }
                 }
                 "Language" => settings.language = value.trim().into(),
@@ -80,8 +124,14 @@ impl Settings {
             .iter()
             .map(|v| format!("{v:02x}"))
             .collect();
+        let network_hex: String = self
+            .network
+            .as_bytes()
+            .iter()
+            .map(|value| format!("{value:02x}"))
+            .collect();
         format!(
-            "[Settings]\nProfileHex={hex}\nLanguage={}\nPauseMinutes={}\n",
+            "[Settings]\nProfileHex={hex}\nNetworkHex={network_hex}\nLanguage={}\nPauseMinutes={}\n",
             self.language, self.pause_minutes
         )
     }

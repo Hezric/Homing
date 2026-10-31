@@ -15,19 +15,31 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.3
+    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.4
     with:
       manifest: src-tauri/Cargo.toml
       frontend: true
       build-command: vp exec tauri build --ci --no-bundle -- --locked
+  browser:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          version: 1.4.0
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - run: vp exec playwright install chromium
+      - run: vp run test:browser
   test:
-    needs: verify
+    needs: [verify, browser]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - run: test '${{ needs.verify.result }}' = success
+      - run: test '${{ needs.browser.result }}' = success
   policy-check:
-    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.3
+    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.4
   policy:
     needs: policy-check
     if: always()

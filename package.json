@@ -8,15 +8,17 @@
     "build": "vp build",
     "preview": "vp preview --host 127.0.0.1 --port 1420 --strictPort",
     "test": "node --test src/*.test.js",
+    "test:browser": "vp exec playwright test",
     "tauri": "tauri",
     "icons": "node scripts/tray-icons.mjs"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-sc": "^5.3.1",
     "@tauri-apps/api": "^2.12.4",
-    "linen-ui": "git+https://github.com/Hezric/Linen.git#v0.1.3"
+    "linen-ui": "git+https://github.com/Hezric/Linen.git#v0.1.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tauri-apps/cli": "^2.12.4",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
     "vite-plus": "1.4.0"

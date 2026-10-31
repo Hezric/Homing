@@ -16,6 +16,6 @@ permissions:
   issues: write
 jobs:
   remind:
-    uses: Hezric/Linen/.github/workflows/release-reminder.yml@v0.1.3
+    uses: Hezric/Linen/.github/workflows/release-reminder.yml@v0.1.4
     with:
       scenario: ${{ inputs.scenario || 'normal' }}

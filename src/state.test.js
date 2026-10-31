@@ -5,7 +5,7 @@ import {
   mockUpdate,
   parsePauseMinutes,
   pauseLabel,
-  validProfile,
+  validNetwork,
   localeFor,
   connectionLabel,
 } from "./state.js";
@@ -33,10 +33,10 @@ test("mock pause and duration edits preserve the current deadline", () => {
   mockUpdate(state, { type: "togglePause" });
   assert.equal(state.pauseRemaining, 2700);
 });
-test("profile validation preserves names and rejects line breaks", () => {
-  for (const value of ["", " ", "Home\n", "Home\0", "a".repeat(256)])
-    assert.equal(validProfile(value), false);
-  assert.equal(validProfile('家 & " = [x]'), true);
+test("network validation preserves Unicode and enforces the SSID byte limit", () => {
+  for (const value of ["", " ", "Home\n", "Home\0", "a".repeat(33), "家".repeat(11)])
+    assert.equal(validNetwork(value), false);
+  assert.equal(validNetwork('家 & " = [x]'), true);
 });
 test("current Wi-Fi connection is distinct from target reconnect state", () => {
   assert.equal(
@@ -70,11 +70,11 @@ test("unreachable target explains automatic retry and missing configuration", ()
     "无法连接 Home Wi-Fi · 自动重试中",
   );
   assert.equal(
-    connectionLabel({ ...mockState("disconnected"), profile: "" }, "en"),
+    connectionLabel({ ...mockState("disconnected"), configured: false }, "en"),
     "Choose a network to keep",
   );
   assert.equal(
-    connectionLabel({ ...mockState("disconnected"), profile: "" }, "zh"),
+    connectionLabel({ ...mockState("disconnected"), configured: false }, "zh"),
     "选择要保持连接的网络",
   );
 });
