@@ -355,3 +355,21 @@ fn restoring_a_legacy_display_name_does_not_change_its_matching_or_settings() {
         .unwrap()
         .contains("\"Home\""));
 }
+
+#[test]
+fn early_notification_does_not_strand_guard_on_another_network() {
+    let mut guard = guard();
+    let mut wifi = Simulated {
+        network: Network { current: Some("Home".into()), interface_text: "Home".into() },
+        ..Default::default()
+    };
+    guard.reconcile(&mut wifi, || 0, 1000);
+    // ACM can fire before NLM/IP Helper settles, so its callback still sees Home.
+    guard.reconcile(&mut wifi, || 10, 1000);
+    wifi.network = Network { current: Some("Away".into()), interface_text: "Away".into() };
+    let deadline = guard.deadline(10).expect("a settled-state check must follow an early notification");
+    assert!(deadline <= 1010);
+    guard.reconcile(&mut wifi, || deadline, 1001);
+    assert_eq!(wifi.requests, ["Home"]);
+    assert_eq!(guard.state(deadline).connection, Connection::Reconnecting);
+}

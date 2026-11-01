@@ -46,3 +46,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: test '${{ needs.policy-check.result }}' = success
+  recovery-regression:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2.9.3
+        with:
+          workspaces: src-tauri -> target
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked --lib wifi::tests::software_radio_is_restored_before_the_real_connection_request_path -- --nocapture
+      - if: always()
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked --test reconnect early_notification_does_not_strand_guard_on_another_network -- --nocapture
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-recovery-source
+          path: |
+            src-tauri/src/wifi.rs
+            src-tauri/tests/reconnect.rs

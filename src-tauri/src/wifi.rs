@@ -9,7 +9,7 @@ use windows::Win32::{
     Foundation::HANDLE,
     NetworkManagement::{
         IpHelper::{FreeMibTable, GetIfTable2, IF_TYPE_IEEE80211},
-        Ndis::{IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
+        Ndis::{dot11_radio_state_off, dot11_radio_state_on, IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
         WiFi::*,
     },
     Networking::NetworkListManager::{INetworkListManager, NetworkListManager},
@@ -129,12 +129,83 @@ impl WifiBackend for WindowsWifi {
         inspect_network().map_err(|e| e.to_string())
     }
     fn connect(&mut self, profile: &str) -> Result<(), String> {
-        validate_profile(profile)?;
+        connect_profile(&mut NativeConnection(self.handle), profile)
+    }
+}
+
+struct Radio {
+    adapter: windows_core::GUID,
+    state: WLAN_PHY_RADIO_STATE,
+}
+#[allow(dead_code)]
+trait ConnectionApi {
+    fn radios(&mut self, profile: &str) -> Result<Vec<Radio>, String>;
+    fn enable(&mut self, radio: &Radio) -> Result<(), String>;
+    fn request(&mut self, profile: &str) -> Result<(), String>;
+}
+fn connect_profile(api: &mut impl ConnectionApi, profile: &str) -> Result<(), String> {
+    validate_profile(profile)?;
+    api.request(profile)
+}
+struct NativeConnection(HANDLE);
+impl ConnectionApi for NativeConnection {
+    fn radios(&mut self, profile: &str) -> Result<Vec<Radio>, String> {
+        unsafe {
+            let mut interfaces = WlanMemory(std::ptr::null_mut());
+            let code = WlanEnumInterfaces(self.0, None, &mut interfaces.0);
+            if code != 0 || interfaces.0.is_null() {
+                return Err(format!("Can't read Wi-Fi radios ({code})"));
+            }
+            let interfaces = std::slice::from_raw_parts(
+                (*interfaces.0).InterfaceInfo.as_ptr(),
+                (*interfaces.0).dwNumberOfItems as usize,
+            );
+            let mut radios = Vec::new();
+            for interface in interfaces {
+                let mut profiles = WlanMemory(std::ptr::null_mut());
+                let code = WlanGetProfileList(self.0, &interface.InterfaceGuid, None, &mut profiles.0);
+                if code != 0 || profiles.0.is_null() {
+                    return Err(format!("Can't read saved Wi-Fi profiles ({code})"));
+                }
+                let profiles = std::slice::from_raw_parts(
+                    (*profiles.0).ProfileInfo.as_ptr(),
+                    (*profiles.0).dwNumberOfItems as usize,
+                );
+                if !profiles.iter().any(|entry| profile_name(&entry.strProfileName).is_ok_and(|name| name == profile)) {
+                    continue;
+                }
+                let mut data = WlanMemory(std::ptr::null_mut::<c_void>());
+                let mut size = 0;
+                let code = WlanQueryInterface(self.0, &interface.InterfaceGuid, wlan_intf_opcode_radio_state, None, &mut size, &mut data.0, None);
+                if code != 0 || data.0.is_null() || (size as usize) < std::mem::size_of::<WLAN_RADIO_STATE>() {
+                    return Err(format!("Can't read Wi-Fi radio state ({code})"));
+                }
+                let state = &*data.0.cast::<WLAN_RADIO_STATE>();
+                let count = state.dwNumberOfPhys as usize;
+                if count == 0 || count > state.PhyRadioState.len() {
+                    return Err("Can't read Wi-Fi radio PHYs".into());
+                }
+                radios.extend(state.PhyRadioState[..count].iter().map(|state| Radio {
+                    adapter: interface.InterfaceGuid,
+                    state: *state,
+                }));
+            }
+            Ok(radios)
+        }
+    }
+    fn enable(&mut self, radio: &Radio) -> Result<(), String> {
+        let mut state = radio.state;
+        state.dot11SoftwareRadioState = dot11_radio_state_on;
+        let code = unsafe {
+            WlanSetInterface(self.0, &radio.adapter, wlan_intf_opcode_radio_state, std::mem::size_of_val(&state) as u32, (&state as *const WLAN_PHY_RADIO_STATE).cast(), None)
+        };
+        if code == 0 { Ok(()) } else { Err(format!("Windows could not enable the Wi-Fi software radio ({code})")) }
+    }
+    fn request(&mut self, profile: &str) -> Result<(), String> {
         // Keep the old saved-profile selection without passing user text to cmd.exe.
         netsh(&["wlan", "connect", &format!("name={profile}")])
     }
 }
-
 // WLAN owns these allocations, including on early-return error paths.
 struct WlanMemory<T>(*mut T);
 impl<T> Drop for WlanMemory<T> {
@@ -411,6 +482,40 @@ fn adapter_name(
 #[cfg(test)]
 mod tests {
     use super::*;
+    struct RadioSimulation {
+        software_off: bool,
+        events: Vec<&'static str>,
+    }
+    impl ConnectionApi for RadioSimulation {
+        fn radios(&mut self, _: &str) -> Result<Vec<Radio>, String> {
+            self.events.push("query");
+            Ok(vec![Radio {
+                adapter: windows_core::GUID::zeroed(),
+                state: WLAN_PHY_RADIO_STATE {
+                    dwPhyIndex: 3,
+                    dot11SoftwareRadioState: if self.software_off { dot11_radio_state_off } else { dot11_radio_state_on },
+                    dot11HardwareRadioState: dot11_radio_state_on,
+                },
+            }])
+        }
+        fn enable(&mut self, radio: &Radio) -> Result<(), String> {
+            assert_eq!(radio.state.dwPhyIndex, 3);
+            self.events.push("enable");
+            self.software_off = false;
+            Ok(())
+        }
+        fn request(&mut self, profile: &str) -> Result<(), String> {
+            assert_eq!(profile, "Home alias");
+            self.events.push("connect");
+            if self.software_off { Err("radio is off".into()) } else { Ok(()) }
+        }
+    }
+    #[test]
+    fn software_radio_is_restored_before_the_real_connection_request_path() {
+        let mut api = RadioSimulation { software_off: true, events: Vec::new() };
+        assert!(connect_profile(&mut api, "Home alias").is_ok());
+        assert_eq!(api.events, ["query", "enable", "connect"]);
+    }
     #[test]
     fn saved_metadata_extracts_ssids_without_displaying_profile_aliases() {
         unsafe {
