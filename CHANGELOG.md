@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0]
+
+### Features
+
+- show protection and align network actions (#12)
+
 ## [0.2.0]
 
 ### Features
