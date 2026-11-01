@@ -103,7 +103,8 @@ impl Reconnector {
         if network.interface_text.contains(target) {
             self.connection = Connection::Connected;
             // ACM notifications can precede NLM/IP Helper updates or omit radio changes.
-            self.retry_at = Some(now() + 1000);
+            self.retry_at = None;
+            self.observation_at = Some(now() + 1000);
             self.error = observation_error;
             return;
         }

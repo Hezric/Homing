@@ -9,10 +9,7 @@ use windows::Win32::{
     Foundation::HANDLE,
     NetworkManagement::{
         IpHelper::{FreeMibTable, GetIfTable2, IF_TYPE_IEEE80211},
-        Ndis::{
-            IfOperStatusDormant, IfOperStatusDown,
-            IfOperStatusLowerLayerDown, IfOperStatusUp,
-        },
+        Ndis::{IfOperStatusDormant, IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
         WiFi::*,
     },
     Networking::NetworkListManager::{INetworkListManager, NetworkListManager},
@@ -151,7 +148,8 @@ fn connect_profile(api: &mut impl ConnectionApi, profile: &str) -> Result<(), St
         return Err("The saved Wi-Fi profile has no available radio".into());
     }
     if radios.iter().any(|radio| {
-        ![dot11_radio_state_on, dot11_radio_state_off].contains(&radio.state.dot11SoftwareRadioState)
+        ![dot11_radio_state_on, dot11_radio_state_off]
+            .contains(&radio.state.dot11SoftwareRadioState)
             || ![dot11_radio_state_on, dot11_radio_state_off]
                 .contains(&radio.state.dot11HardwareRadioState)
     }) {
@@ -161,7 +159,9 @@ fn connect_profile(api: &mut impl ConnectionApi, profile: &str) -> Result<(), St
         .iter()
         .any(|radio| radio.state.dot11HardwareRadioState == dot11_radio_state_on)
     {
-        return Err("The Wi-Fi hardware radio is off; turn it on in Windows or on the device".into());
+        return Err(
+            "The Wi-Fi hardware radio is off; turn it on in Windows or on the device".into(),
+        );
     }
     for radio in &radios {
         if radio.state.dot11HardwareRadioState == dot11_radio_state_on
@@ -622,20 +622,72 @@ mod tests {
         assert_eq!(api.events, ["query", "enable", "connect"]);
         api.events.clear();
         assert!(connect_profile(&mut api, "Home alias").is_ok());
-        assert_eq!(api.events, ["query", "connect"], "an enabled radio is not rewritten");
+        assert_eq!(
+            api.events,
+            ["query", "connect"],
+            "an enabled radio is not rewritten"
+        );
     }
     #[test]
     fn radio_recovery_stops_on_unknown_hardware_missing_profile_and_os_failures() {
         for (software, hardware, missing, fail_at, expected) in [
-            (dot11_radio_state_unknown, dot11_radio_state_on, false, None, vec!["query"]),
-            (dot11_radio_state_off, dot11_radio_state_unknown, false, None, vec!["query"]),
-            (dot11_radio_state_off, dot11_radio_state_off, false, None, vec!["query"]),
-            (dot11_radio_state_off, dot11_radio_state_on, true, None, vec!["query"]),
-            (dot11_radio_state_off, dot11_radio_state_on, false, Some("query"), vec!["query"]),
-            (dot11_radio_state_off, dot11_radio_state_on, false, Some("enable"), vec!["query", "enable"]),
-            (dot11_radio_state_on, dot11_radio_state_on, false, Some("connect"), vec!["query", "connect"]),
+            (
+                dot11_radio_state_unknown,
+                dot11_radio_state_on,
+                false,
+                None,
+                vec!["query"],
+            ),
+            (
+                dot11_radio_state_off,
+                dot11_radio_state_unknown,
+                false,
+                None,
+                vec!["query"],
+            ),
+            (
+                dot11_radio_state_off,
+                dot11_radio_state_off,
+                false,
+                None,
+                vec!["query"],
+            ),
+            (
+                dot11_radio_state_off,
+                dot11_radio_state_on,
+                true,
+                None,
+                vec!["query"],
+            ),
+            (
+                dot11_radio_state_off,
+                dot11_radio_state_on,
+                false,
+                Some("query"),
+                vec!["query"],
+            ),
+            (
+                dot11_radio_state_off,
+                dot11_radio_state_on,
+                false,
+                Some("enable"),
+                vec!["query", "enable"],
+            ),
+            (
+                dot11_radio_state_on,
+                dot11_radio_state_on,
+                false,
+                Some("connect"),
+                vec!["query", "connect"],
+            ),
         ] {
-            let mut api = RadioSimulation { software, hardware, missing, fail_at, events: Vec::new() };
+            let mut api = RadioSimulation {
+                software,
+                hardware,
+                missing,
+                fail_at,
+                events: Vec::new(),
+            };
             assert!(connect_profile(&mut api, "Home alias").is_err());
             assert_eq!(api.events, expected);
         }
@@ -643,7 +695,10 @@ mod tests {
         for profile in ["", "bad\nprofile", "bad\0profile"] {
             assert!(connect_profile(&mut api, profile).is_err());
         }
-        assert!(api.events.is_empty(), "invalid profiles never reach Windows");
+        assert!(
+            api.events.is_empty(),
+            "invalid profiles never reach Windows"
+        );
     }
     #[test]
     fn native_radio_payload_preserves_adapter_and_phy_identity_and_rejects_bad_counts() {
@@ -663,7 +718,10 @@ mod tests {
     }
     #[test]
     fn radio_recovery_obeys_guard_pause_configuration_observation_and_failure_cooldown() {
-        use crate::{core::{Connection, Reconnector}, settings::Settings};
+        use crate::{
+            core::{Connection, Reconnector},
+            settings::Settings,
+        };
         struct Backend {
             api: RadioSimulation,
             unreadable: bool,
@@ -674,21 +732,52 @@ mod tests {
                     return Err("unknown adapter".into());
                 }
                 let current = adapter_name(IfOperStatusDown, None, false).unwrap();
-                Ok(Network { current, interface_text: String::new() })
+                Ok(Network {
+                    current,
+                    interface_text: String::new(),
+                })
             }
             fn connect(&mut self, profile: &str) -> Result<(), String> {
                 connect_profile(&mut self.api, profile)
             }
         }
-        for (configured, paused, unreadable) in [(false, false, false), (true, true, false), (true, false, true)] {
-            let mut guard = Reconnector::new(Settings { profile: if configured { "Home alias".into() } else { String::new() }, ..Settings::default() });
-            let mut wifi = Backend { api: RadioSimulation::default(), unreadable };
-            if paused { guard.pause(0); }
+        for (configured, paused, unreadable) in [
+            (false, false, false),
+            (true, true, false),
+            (true, false, true),
+        ] {
+            let mut guard = Reconnector::new(Settings {
+                profile: if configured {
+                    "Home alias".into()
+                } else {
+                    String::new()
+                },
+                ..Settings::default()
+            });
+            let mut wifi = Backend {
+                api: RadioSimulation::default(),
+                unreadable,
+            };
+            if paused {
+                guard.pause(0);
+            }
             guard.reconcile(&mut wifi, || 0, 1000);
-            assert!(wifi.api.events.is_empty(), "guard restrictions cover radio writes too");
+            assert!(
+                wifi.api.events.is_empty(),
+                "guard restrictions cover radio writes too"
+            );
         }
-        let mut guard = Reconnector::new(Settings { profile: "Home alias".into(), ..Settings::default() });
-        let mut wifi = Backend { api: RadioSimulation { fail_at: Some("enable"), ..Default::default() }, unreadable: false };
+        let mut guard = Reconnector::new(Settings {
+            profile: "Home alias".into(),
+            ..Settings::default()
+        });
+        let mut wifi = Backend {
+            api: RadioSimulation {
+                fail_at: Some("enable"),
+                ..Default::default()
+            },
+            unreadable: false,
+        };
         guard.reconcile(&mut wifi, || 0, 1000);
         assert_eq!(guard.state(0).connection, Connection::Disconnected);
         assert!(guard.state(0).error.unwrap().contains("enable denied"));
@@ -697,7 +786,10 @@ mod tests {
         assert_eq!(wifi.api.events, ["query", "enable"]);
         wifi.api.fail_at = None;
         guard.reconcile(&mut wifi, || 61_000, 1061);
-        assert_eq!(wifi.api.events, ["query", "enable", "query", "enable", "connect"]);
+        assert_eq!(
+            wifi.api.events,
+            ["query", "enable", "query", "enable", "connect"]
+        );
         assert_eq!(guard.state(61_000).connection, Connection::Reconnecting);
         assert_eq!(guard.deadline(61_000), Some(62_000));
     }
@@ -759,7 +851,12 @@ mod tests {
         for status in [IfOperStatusDown, IfOperStatusLowerLayerDown] {
             assert_eq!(adapter_name(status, None, false).unwrap(), None);
         }
-        for status in [IfOperStatusNotPresent, IfOperStatusUnknown, IfOperStatusDormant, IfOperStatusUp] {
+        for status in [
+            IfOperStatusNotPresent,
+            IfOperStatusUnknown,
+            IfOperStatusDormant,
+            IfOperStatusUp,
+        ] {
             assert!(adapter_name(status, None, false).is_err());
         }
         assert!(adapter_name(IfOperStatusUp, Some(String::new()), false).is_err());
