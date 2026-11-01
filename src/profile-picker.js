@@ -2,7 +2,7 @@ import { text, validNetwork } from "./state.js";
 
 export function createProfilePicker(container, { load, save }) {
   container.innerHTML = `<div class="profile-heading"><h2><label id="profile-label" for="profile"></label></h2></div>
-    <div class="profile-row"><input id="profile" class="profile" type="text" maxlength="32" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-list" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button><button id="use-current-profile" class="button" type="button" aria-describedby="current-profile-hint"></button></div>
+    <div class="profile-row"><input id="profile" class="profile text-input" type="text" maxlength="32" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-list" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button><button id="use-current-profile" class="button" type="button" aria-describedby="current-profile-hint"></button></div>
     <p id="profile-hint" class="profile-hint"></p><p id="current-profile-hint" class="profile-hint"></p><button id="retry-profiles" class="button" type="button" hidden></button>
     <p id="profile-error" class="profile-error" role="alert" hidden></p>
     <div id="profile-popup" class="profile-popup" popover="manual"><div id="profile-list" role="listbox" aria-labelledby="profile-label"></div><p id="profile-list-status" role="status"></p></div>`;
@@ -37,7 +37,7 @@ export function createProfilePicker(container, { load, save }) {
     popup.style.left = `${row.left}px`;
     popup.style.top = `${row.bottom}px`;
     popup.style.width = `${row.width}px`;
-    popup.style.maxHeight = `${available}px`;
+    popup.style.setProperty("--popup-height", `${available}px`);
     list.style.maxHeight = `${Math.max(0, available - 10)}px`;
   }
   function close() {
@@ -53,7 +53,7 @@ export function createProfilePicker(container, { load, save }) {
     container.querySelector("#profile-hint").textContent = t.profileHint;
     currentButton.textContent = t.useCurrent;
     const current = catalog?.current && catalog.names.includes(catalog.current);
-    currentButton.disabled = saving || !!loading || !current;
+    currentButton.disabled = saving || !current;
     const currentHint = container.querySelector("#current-profile-hint");
     currentButton.title = t.currentProfileReady;
     currentHint.hidden = !!current && !loadError;
@@ -110,7 +110,10 @@ export function createProfilePicker(container, { load, save }) {
     }
   }
   async function refresh() {
-    if (loading) return loading;
+    if (loading) {
+      try { await loading; } catch {}
+      return;
+    }
     loading = Promise.resolve().then(load);
     loadError = false;
     draw();
@@ -213,7 +216,12 @@ export function createProfilePicker(container, { load, save }) {
     if (!container.contains(event.target)) close();
   });
   saveButton.addEventListener("click", () => submit());
-  currentButton.addEventListener("click", () => select(catalog.current));
+  currentButton.addEventListener("click", async () => {
+    const requestedRevision = revision;
+    await refresh();
+    if (!saving && revision === requestedRevision && catalog?.current && catalog.names.includes(catalog.current))
+      select(catalog.current);
+  });
   retry.addEventListener("click", refresh);
   window.addEventListener("resize", position);
   document.addEventListener("scroll", position, true);

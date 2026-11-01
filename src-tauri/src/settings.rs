@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::Path};
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub profile: String,
     pub network: String,
@@ -63,51 +65,13 @@ impl Settings {
         Ok(())
     }
     pub fn parse(text: &str) -> Result<Self, String> {
-        let mut settings = Self::default();
-        let mut section = "";
-        for line in text.trim_start_matches('\u{feff}').lines().map(str::trim) {
-            if line.is_empty() || line.starts_with([';', '#']) {
-                continue;
-            }
-            if let Some(name) = line.strip_prefix('[') {
-                section = name.strip_suffix(']').ok_or("Malformed INI section")?;
-                continue;
-            }
-            let (key, value) = line.split_once('=').ok_or("Malformed INI setting")?;
-            if section != "Settings" {
-                continue;
-            }
-            match key.trim() {
-                "ProfileHex" | "NetworkHex" => {
-                    let value = value.trim();
-                    if !value.is_ascii() || !value.len().is_multiple_of(2) {
-                        return Err("Invalid profile encoding".into());
-                    }
-                    let bytes = (0..value.len())
-                        .step_by(2)
-                        .map(|i| u8::from_str_radix(&value[i..i + 2], 16))
-                        .collect::<Result<Vec<_>, _>>()
-                        .map_err(|_| "Invalid profile encoding")?;
-                    let value = String::from_utf8(bytes).map_err(|_| "Invalid profile encoding")?;
-                    if key.trim() == "ProfileHex" {
-                        if !value.is_empty() {
-                            validate_profile(&value)?;
-                        }
-                        settings.profile = value;
-                    } else {
-                        if !value.is_empty() {
-                            validate_network(&value)?;
-                        }
-                        settings.network = value;
-                    }
-                }
-                "Language" => settings.language = value.trim().into(),
-                "PauseMinutes" => {
-                    settings.pause_minutes =
-                        value.trim().parse().map_err(|_| "Invalid pause duration")?
-                }
-                _ => {}
-            }
+        let settings: Self = toml::from_str(text.trim_start_matches('\u{feff}'))
+            .map_err(|e| format!("Invalid TOML settings: {e}"))?;
+        if !settings.profile.is_empty() {
+            validate_profile(&settings.profile)?;
+        }
+        if !settings.network.is_empty() {
+            validate_network(&settings.network)?;
         }
         if !["system", "en", "zh"].contains(&settings.language.as_str()) {
             return Err("Invalid language".into());
@@ -118,22 +82,7 @@ impl Settings {
         Ok(settings)
     }
     pub fn encode(&self) -> String {
-        let hex: String = self
-            .profile
-            .as_bytes()
-            .iter()
-            .map(|v| format!("{v:02x}"))
-            .collect();
-        let network_hex: String = self
-            .network
-            .as_bytes()
-            .iter()
-            .map(|value| format!("{value:02x}"))
-            .collect();
-        format!(
-            "[Settings]\nProfileHex={hex}\nNetworkHex={network_hex}\nLanguage={}\nPauseMinutes={}\n",
-            self.language, self.pause_minutes
-        )
+        toml::to_string_pretty(self).expect("settings contain only TOML-compatible types")
     }
     pub fn load(path: &Path) -> (Self, Option<String>) {
         match fs::read_to_string(path) {
@@ -159,7 +108,7 @@ impl Settings {
         Self::parse(&self.encode())?;
         let parent = path.parent().ok_or("Settings directory is missing")?;
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        let temporary = path.with_extension("ini.tmp");
+        let temporary = path.with_extension("toml.tmp");
         let result = (|| -> std::io::Result<()> {
             let mut file = fs::File::create(&temporary)?;
             file.write_all(self.encode().as_bytes())?;

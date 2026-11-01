@@ -30,9 +30,23 @@ test("the main card reports protection only for a healthy active domain match", 
   });
   await page.goto("/");
   await expect(page.locator("body")).toHaveClass(/presented/);
+  let previousShield = await page.locator("#protection-shield").evaluate(el => getComputedStyle(el).color);
+  for (const accent of ["#a347ba", "#20794b"]) {
+    await page.evaluate(accent => window.__TEST_WIFI__.publish({accent}), accent);
+    const expected = await page.evaluate(accent => {const el=document.createElement('span');el.style.color=accent;document.body.append(el);const color=getComputedStyle(el).color;el.remove();return color;}, accent);
+    await expect(page.locator('#current-icon')).toHaveCSS('color', expected);
+    await expect(page.locator('#protection-shield')).not.toHaveCSS('color', previousShield);
+    previousShield = await page.locator('#protection-shield').evaluate(el => getComputedStyle(el).color);
+    await page.locator('#gear').click();
+    await page.locator('#profile').focus();
+    await expect(page.locator('#profile')).toHaveCSS('border-bottom-color', expected);
+    await page.locator('#pause-minutes').focus();
+    await expect(page.locator('#pause-minutes')).toHaveCSS('border-bottom-color', expected);
+    await page.locator('#gear').click();
+  }
   const cases = [
     { name: "protected-en-light", delta: {}, protected: true, label: "Connected · Protected" },
-    { name: "protected-zh-dark", delta: { language: "zh", dark: true, accent: "#60cdff" }, protected: true, label: "已连接 · 保护中" },
+    { name: "protected-zh-dark", delta: { language: "zh", dark: true, accent: "#60cdff", accentInk: "#000" }, protected: true, label: "已连接 · 保护中" },
     { name: "other-network", delta: { language: "en", connection: "disconnected" }, protected: false, label: "Connected" },
     { name: "unconfigured", delta: { configured: false }, protected: false, label: "Connected" },
     { name: "disconnected", delta: { configured: true, current: null }, protected: false, label: "Can't reach Different saved SSID · retrying automatically" },

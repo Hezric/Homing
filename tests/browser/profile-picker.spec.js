@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { mockState } from "../../src/state.js";
 
 test.use({ deviceScaleFactor: 2 });
 
@@ -43,7 +44,7 @@ for (const lang of ["en", "zh"])
       ).toBe("0px");
       const saveBox = await page.locator("#save-profile").boundingBox();
       const currentBox = await page.locator("#use-current-profile").boundingBox();
-      expect(saveBox.width).toBeCloseTo(currentBox.width, 1);
+      expect(currentBox.width).toBeGreaterThan(saveBox.width);
       expect(saveBox.height).toBeCloseTo(currentBox.height, 1);
       expect(saveBox.y).toBeCloseTo(fieldBox.y, 1);
       expect(currentBox.y).toBeCloseTo(fieldBox.y, 1);
@@ -256,4 +257,56 @@ test("a slow saved target reply preserves a later draft and reports its committe
   await expect(page.locator("#profile-error")).toBeVisible();
   await expect(input).toHaveValue("Not saved");
   await expect(page.locator("#target")).toHaveText("Office Wi-Fi");
+});
+
+test("focusing a ready network field keeps Use current continuously available", async ({ page }) => {
+  await page.goto("/?view=settings");
+  const current = page.locator("#use-current-profile");
+  await expect(current).toBeEnabled();
+  await page.locator("#save-profile").focus();
+  await page.evaluate(() => {
+    window.currentAvailabilityChanges = [];
+    new MutationObserver(records => window.currentAvailabilityChanges.push(...records.map(record => record.oldValue)))
+      .observe(document.querySelector("#use-current-profile"), { attributes:true, attributeFilter:["disabled"], attributeOldValue:true });
+  });
+  await page.locator("#profile").focus();
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => window.currentAvailabilityChanges)).toEqual([]);
+  await expect(current).toBeEnabled();
+});
+test("Use current waits for the fresh connection and preserves a newer draft", async ({ page }) => {
+  await page.addInitScript(state => {
+    window.isTauri = true;
+    const bridge = window.__TEST_CURRENT__ = {calls:0, pending:null};
+    const catalog = {names:["Home Wi-Fi", "Office Wi-Fi"], current:"Home Wi-Fi"};
+    window.__TAURI_INTERNALS__ = {
+      transformCallback() {return 1;},
+      async invoke(command) {
+        if (command === "plugin:event|listen") return 1;
+        if (command === "snapshot") return state;
+        if (command === "saved_networks") {
+          if (++bridge.calls === 1) return catalog;
+          return new Promise(resolve => {bridge.pending = () => {bridge.pending=null;resolve({...catalog,current:"Office Wi-Fi"});};});
+        }
+        if (command === "resize_flyout") return {limit:620};
+        if (["prepare_flyout","present_flyout","dismiss_flyout"].includes(command)) return;
+        throw Error(`Unexpected simulated command ${command}`);
+      }
+    };
+  }, {...mockState("connected"), language:"en"});
+  await page.goto("/");
+  await page.locator("#gear").click();
+  const input = page.locator("#profile"), current = page.locator("#use-current-profile");
+  await expect(current).toBeEnabled();
+  await input.focus();
+  await expect(current).toBeEnabled();
+  await current.click();
+  await expect.poll(() => page.evaluate(() => window.__TEST_CURRENT__.calls), {timeout:1000}).toBeGreaterThan(1);
+  await page.evaluate(() => window.__TEST_CURRENT__.pending());
+  await expect(input).toHaveValue("Office Wi-Fi");
+  await input.focus();
+  await current.click();
+  await input.fill("Home Wi-Fi");
+  await page.evaluate(() => window.__TEST_CURRENT__.pending());
+  await expect(input).toHaveValue("Home Wi-Fi");
 });

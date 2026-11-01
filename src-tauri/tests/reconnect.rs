@@ -341,7 +341,7 @@ fn restoring_a_legacy_display_name_does_not_change_its_matching_or_settings() {
             Ok(())
         }
     }
-    let settings = Settings::parse("[Settings]\nProfileHex=486f6d65\n").unwrap();
+    let settings = Settings::parse("profile='Home'\n").unwrap();
     let original = settings.clone();
     let mut guard = Reconnector::new(settings);
     let mut wifi = LegacyWifi { requests: vec![] };

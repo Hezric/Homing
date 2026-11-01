@@ -51,7 +51,7 @@ pub fn run() {
                 .map(std::path::PathBuf::from)
                 .ok_or("APPDATA is not available")?
                 .join("Homing")
-                .join("Homing.ini");
+                .join("Homing.toml");
             app.manage(runtime::start(app.handle().clone(), path)?);
             Ok(())
         })

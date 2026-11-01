@@ -1,8 +1,8 @@
-# Homing
-
-让 Wi-Fi 静静归来。
-
-[English](README.md)
+<div align="center">
+  <h1>Homing</h1>
+  <p>让 Wi-Fi 静静归来。</p>
+  <p><a href="README.md">English</a> | 简体中文</p>
+</div>
 
 Homing 守候你已保存的 Windows Wi-Fi。已观测的网络名称中找不到指定名称时，它便请
 Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定时器处理。
@@ -10,7 +10,7 @@ Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定
 小巧的托盘面板展示当前网络、重连状态与上次重连请求的时间。齿轮后的设置可填写
 网络、选择 1–720 分钟的暂停时长，以及英语或简体中文。主题与强调色跟随
 Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任务栏尺寸。
-任务栏图标的面板居中显示在图标上方，隐藏图标则从屏幕侧边滑入通知区角落。阴影与圆角由 Windows 绘制；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
+浮窗统一从右侧滑入当前屏幕的右下角，内容向上展开、向下收起，暂停与设置底栏保持原位。阴影与圆角沿用 Linen 的共享样式；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
 
 ## 安装
 
@@ -20,6 +20,19 @@ Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任�
 从[发布页](https://github.com/Hezric/Homing/releases/latest)下载 Windows x64 便携包，
 对照 `SHA256SUMS` 校验后解压，并保留 WebView2。保存目标后即启用自动重连。
 登录启动交给已有启动管理器。
+
+## 交给智能体
+
+将下面这段话交给能够构建 Windows 软件的智能体：
+
+```text
+从 https://github.com/Hezric/Homing/releases/latest 安装 Homing。
+对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在，先不启动。
+保留已有设置和登录启动登记。说明保存目标或使用已有目标会启用 Wi-Fi 重连，激活前取得授权。
+通过我已有的 Skill 管理方式安装 skills/homing。若没有，请先询问，建议使用
+Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-labs/skills，
+要求 Node.js 22.20 及以上）。也要确认安装后 Skill 的位置和完整内容。
+```
 
 ## 构建
 
@@ -35,19 +48,6 @@ vp exec tauri build --ci --no-bundle -- --locked
 ```
 
 便携程序位于 `src-tauri/target/release/homing.exe`。登录启动交给 Lineup 等启动管理器。
-
-### 交给智能体
-
-将下面这段话交给能够构建 Windows 软件的智能体：
-
-```text
-从 https://github.com/Hezric/Homing/releases/latest 安装 Homing。
-对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在，先不启动。
-保留已有设置和登录启动登记。说明保存目标或使用已有目标会启用 Wi-Fi 重连，激活前取得授权。
-通过我已有的 Skill 管理方式安装 skills/homing。若没有，请先询问，建议使用
-Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-labs/skills，
-要求 Node.js 22.20 及以上）。也要确认安装后 Skill 的位置和完整内容。
-```
 
 ## 使用
 
@@ -67,8 +67,8 @@ Windows 必须已经保存该网络。格式错误、已删除或无法唯一对
 暂停预设为 15、30、60、120 分钟，默认为 60 分钟；自定义时长在回车或离开输入框时
 保存。修改时长不会改变正在进行的暂停。重启后恢复重连，暂停本身不会断开 Wi-Fi。
 
-设置保存在 `%APPDATA%\Homing\Homing.ini`，网络名称与内部连接配置使用 UTF-8 十六进制编码存储，
-保留中文、空格与 INI 标点。更改以原子方式保存。配置缺失或损坏时不重连；损坏的
+设置保存在 `%APPDATA%\Homing\Homing.toml`，网络名称与内部连接配置以 TOML 引号字符串保存，
+可以直接阅读，并保留中文、空格与特殊字符。更改以原子方式保存。配置缺失或损坏时不重连；损坏的
 原文件会保留到你主动保存设置。错误会显示在面板中。WLAN 通知不可用时，会暂时定时检查并
 重试注册；通知恢复后停止轮询。Wi-Fi 适配器状态和原始 Windows 网络描述不需要位置服务权限；
 显示与匹配使用该原始名称，不受 Windows 添加的连接配置名称后缀影响。无法读取状态时，托盘和面板显示**无法读取 Wi-Fi 状态**。
