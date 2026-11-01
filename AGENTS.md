@@ -22,6 +22,12 @@ Dependabot keeps native branch names; only its branch-name check is exempt. Week
 
 Keep progress in Git and Issues, current behavior in `docs/features/`, canonical language in `GLOSSARY.md` only when needed, and consequential architectural rationale in `docs/adr/` only when a real decision needs preserving.
 
+## Delivery closeout
+
+Finish authorized integration, release, distribution, installation and readback before ending. Close completed issues with evidence, safely remove owned temporary branches and test resources by exact identity, and synchronize both READMEs with the delivered result. Confirm merged PRs or main reachability before branch deletion; preserve unmerged work and unrelated resources.
+
+When whole-repository closeout is explicitly requested, inventory every open issue and PR in the named repositories and give each a real disposition. Close duplicate, obsolete or incompatible proposals with a reason; report unresolved items and their exact blockers. Keep CI, signature and review gates intact, and state actual integration, publication, installation and cleanup status.
+
 ## Release
 
 Release only on explicit user instruction. The single `Release due` issue is advisory: security/breaking change, five user-visible changes, or one after 30 days. Use git-cliff with `cliff.toml`, update `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` together in `chore(release): vX.Y.Z`. After the tested squash merge, verify its signature and create a signed annotated immutable `vX.Y.Z` tag. The release workflow validates the source, builds portable archives with dependency notices, and publishes changelog notes and SHA256. Verify the downloaded artifacts and signatures before reporting a release.

@@ -12,7 +12,7 @@ Inter and the Noto Sans SC UI subset are bundled under the SIL Open Font License
 `scripts/subset-fonts.py` reproduces the Chinese subset from the locked Fontsource
 package and UI text in `src/state.js`.
 
-Release archives include `THIRD-PARTY-LICENSES.html`, generated with cargo-about
+Release archives keep required notices in `licenses/`, including `THIRD-PARTY-LICENSES.html`, generated with cargo-about
 from the Windows runtime dependency graph, alongside the bundled fonts' and
-icons' licenses and the Tauri frontend API's MIT and Apache licenses.
+icons' licenses. The generated document includes the application and Tauri frontend API MIT notices.
 Exact dependency versions are recorded in the Cargo and npm lockfiles.

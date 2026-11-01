@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0]
+
+### Features
+
+- adopt toml and stable flyouts (#16)
+
 ## [0.3.1]
 
 ### Features

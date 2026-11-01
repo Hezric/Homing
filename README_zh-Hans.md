@@ -1,97 +1,39 @@
 <div align="center">
-  <h1>Homing</h1>
+  <h1>📶 Homing</h1>
   <p>让 Wi-Fi 静静归来。</p>
+  <p><a href="https://github.com/Hezric/Homing/actions/workflows/ci.yml"><img src="https://github.com/Hezric/Homing/actions/workflows/ci.yml/badge.svg?branch=main" alt="持续集成"></a> <a href="https://github.com/Hezric/ScoopZephyr#install"><img src="https://img.shields.io/badge/Scoop-Zephyr-blue" alt="Scoop Zephyr"></a> <a href="https://github.com/Hezric/Homing/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT 许可"></a></p>
   <p><a href="README.md">English</a> | 简体中文</p>
 </div>
 
-Homing 守候你已保存的 Windows Wi-Fi。已观测的网络名称中找不到指定名称时，它便请
-Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定时器处理。
-
-小巧的托盘面板展示当前网络、重连状态与上次重连请求的时间。齿轮后的设置可填写
-网络、选择 1–720 分钟的暂停时长，以及英语或简体中文。主题与强调色跟随
-Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任务栏尺寸。
-浮窗统一从右侧滑入当前屏幕的右下角，内容向上展开、向下收起，暂停与设置底栏保持原位。阴影与圆角沿用 Linen 的共享样式；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
+Homing 守候 Windows 中已保存的 Wi-Fi。目标网络不在时，它会请系统重新连接；小小的托盘面板可以查看连接状态，也可以暂停守护。
 
 ## 安装
 
-使用 Scoop 时，先运行 `scoop bucket add zephyr https://github.com/Hezric/ScoopZephyr`，
-再运行 `scoop install zephyr/homing`。登录启动指向 Scoop 的 `current` 目录下的程序，升级后无需改路径。
+在装有 WebView2 的 Windows 11 上，通过 [ScoopZephyr](https://github.com/Hezric/ScoopZephyr) 安装：
 
-从[发布页](https://github.com/Hezric/Homing/releases/latest)下载 Windows x64 便携包，
-对照 `SHA256SUMS` 校验后解压，并保留 WebView2。保存目标后即启用自动重连。
-登录启动交给已有启动管理器。
+```powershell
+scoop bucket add zephyr https://github.com/Hezric/ScoopZephyr
+scoop install zephyr/homing
+```
+
+也可从[发布页](https://github.com/Hezric/Homing/releases/latest)下载 Windows x64 便携包，对照 `SHA256SUMS` 校验后解压。已有目标时启动或保存目标都会启用重连。登录启动请另行管理；使用 Scoop 时指向 `current` 目录下的程序。
 
 ## 交给智能体
 
-将下面这段话交给能够构建 Windows 软件的智能体：
-
 ```text
 从 https://github.com/Hezric/Homing/releases/latest 安装 Homing。
-对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在，先不启动。
-保留已有设置和登录启动登记。说明保存目标或使用已有目标会启用 Wi-Fi 重连，激活前取得授权。
-通过我已有的 Skill 管理方式安装 skills/homing。若没有，请先询问，建议使用
-Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-labs/skills，
-要求 Node.js 22.20 及以上）。也要确认安装后 Skill 的位置和完整内容。
+对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在；不要启动，
+用 (Get-Item <homing.exe 路径>).VersionInfo.FileVersion 读取文件版本。
+保留已有设置和登录启动登记。已有目标或新保存目标会启用 Wi-Fi 重连，激活前先取得授权。
+通过我已有的 Skill 管理方式单独安装 homing Skill。若没有，请先询问，建议使用
+npx skills add Hezric/Homing -g（Vercel skills CLI，https://github.com/vercel-labs/skills；
+要求 Node.js 22.20 及以上）。确认安装位置和完整内容。
 ```
-
-## 构建
-
-需要 Windows 11、Rust MSVC 工具链、Visual Studio C++ Build Tools、Node.js LTS
-和 Microsoft Edge WebView2，以及 [Vite+](https://viteplus.dev/guide/)。
-
-```powershell
-#requires -Version 7.0
-git clone https://github.com/Hezric/Homing.git
-cd Homing
-vp install --frozen-lockfile
-vp exec tauri build --ci --no-bundle -- --locked
-```
-
-便携程序位于 `src-tauri/target/release/homing.exe`。登录启动交给 Lineup 等启动管理器。
 
 ## 使用
 
-单击托盘图标开关面板，右键可打开、暂停或恢复、退出。进入齿轮设置，输入
-**系统 Wi-Fi 中显示的网络名**搜索已保存的网络，也可手动输入；选好后点击**保存**。
-筛选、选择和离开输入框都不会自动保存。**使用当前**只把当前网络填入草稿，点击**保存**后生效。
-输入框、保存、使用当前依次位于同一行；
-无法可靠对应已保存的网络时，按钮会禁用并说明原因。Homing 不会请求位置权限。
-Windows 必须已经保存该网络。格式错误、已删除或无法唯一对应的同名网络不会改变原目标。
-保存后自动重连即刻生效。Homing 不会创建配置、扫描网络或索要密码。
-名称匹配保留原工具的规则：在已观测的 Windows 网络名称中进行
-区分大小写的子串查找。例如 `Home` 也会匹配 `MyHome5G`。找不到时，以不经过命令
-解释器的方式运行 `netsh wlan connect name=<profile>`。请求被接受后，等待一秒再
-检查；命令失败后，等待 61 秒。请求被接受并不代表连接已完成。**上次重连**表示本次
-运行中最近一次被接受的请求，重启后清空。
+单击托盘图标，打开设置，选择 Windows 已保存的网络。**使用当前**只填入草稿，点击**保存**才生效并启用重连。匹配已观测网络名称时区分大小写，按子串匹配：`Home` 也会匹配 `MyHome5G`。Homing 不扫描网络，也不索要密码。暂停会停止重连请求，重启后恢复。设置保存在 `%APPDATA%\Homing\Homing.toml`。
 
-暂停预设为 15、30、60、120 分钟，默认为 60 分钟；自定义时长在回车或离开输入框时
-保存。修改时长不会改变正在进行的暂停。重启后恢复重连，暂停本身不会断开 Wi-Fi。
+[使用与行为](https://github.com/Hezric/Homing/blob/main/docs/features/wifi-reconnect.md) · [参与贡献与自动化测试](https://github.com/Hezric/Homing/blob/main/CONTRIBUTING.md) · [MIT 许可](https://github.com/Hezric/Homing/blob/main/LICENSE) · [第三方声明](https://github.com/Hezric/Homing/blob/main/THIRD-PARTY-NOTICES.md)
 
-设置保存在 `%APPDATA%\Homing\Homing.toml`，网络名称与内部连接配置以 TOML 引号字符串保存，
-可以直接阅读，并保留中文、空格与特殊字符。更改以原子方式保存。配置缺失或损坏时不重连；损坏的
-原文件会保留到你主动保存设置。错误会显示在面板中。WLAN 通知不可用时，会暂时定时检查并
-重试注册；通知恢复后停止轮询。Wi-Fi 适配器状态和原始 Windows 网络描述不需要位置服务权限；
-显示与匹配使用该原始名称，不受 Windows 添加的连接配置名称后缀影响。无法读取状态时，托盘和面板显示**无法读取 Wi-Fi 状态**。
-此时只重试观测，不会连接；只有确认目标网络未连接时才会请求重连。
-
-“无法连接”表示目标网络未连接，程序会自动重试；没有目标时提示选择网络，“正在重连”表示已发送请求、等待结果。循环标记表示已观测到目标连接，感叹号表示目标未连接、未配置或状态不可读，两条竖线表示暂停；所有托盘状态保持完整对比度。
-
-当前连接匹配已配置的守护目标，且未暂停、无守护错误时，网络卡片显示
-**已连接 · 保护中**和右侧盾牌。
-
-## 预览与参与
-
-```powershell
-#requires -Version 7.0
-vp run dev
-```
-
-打开 `http://127.0.0.1:1420/?lang=zh&theme=light&state=connected`。
-浏览器使用模拟数据，不会更改 Windows Wi-Fi。`lang` 可选 `en` 或 `zh`，`theme`
-可选 `light` 或 `dark`，`state` 可选 `connected`、`reconnecting`、`disconnected`
-、`unreadable` 或 `paused`；`view=settings` 显示设置页。
-`profiles` 可设为 `unavailable`、`empty`、`no-current`、`current-mismatch`、`ambiguous` 或 `stale`，模拟配置列表异常。
-运行 `vp exec playwright install chromium` 和 `vp run test:browser`，可在无头浏览器中验证选择交互与暂停栏边界。
-
-[参与贡献](CONTRIBUTING.md) · [行为与检查](docs/features/wifi-reconnect.md)
-· [MIT 许可](LICENSE) · [第三方声明](THIRD-PARTY-NOTICES.md)
+便携包的 `licenses/` 中附有许可声明。

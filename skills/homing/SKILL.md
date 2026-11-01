@@ -5,7 +5,7 @@ description: Install, inspect or configure Homing on Windows through its native 
 
 # Homing
 
-Download the Windows x64 portable archive from the matching signed release in `Hezric/Homing`. Verify its SHA256 against that release's `SHA256SUMS` before extracting. Keep an existing installation's settings and login registration intact during an update. The archive contains this Skill and its license notices.
+Download the Windows x64 portable archive from the matching signed release in `Hezric/Homing`. Verify its SHA256 against that release's `SHA256SUMS` before extracting. Keep an existing installation's settings and login registration intact during an update. The archive keeps license notices under `licenses/`. Install this Skill separately from the repository.
 
 Saving a target or starting with an existing target enables automatic Wi-Fi reconnect. Obtain authorization before that activation on a machine carrying remote sessions. First inspect the current connection in the flyout; unreadable is not disconnected. Never test by disconnecting a live network. Browser mock preview is safe.
 
