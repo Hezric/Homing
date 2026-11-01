@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.1]
+
+### Features
+
+- Keep the network input, Save and Use current on one row with equal-size buttons.
+- Show a right-side shield and Connected · Protected for a healthy active target connection.
+
+### Fixes
+
+- Clarify that Use current fills a draft and Save commits it in both READMEs and the bundled agent instructions.
+
 ## [0.3.0]
 
 ### Features

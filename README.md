@@ -62,9 +62,10 @@ Verify the installed Skill's path and complete contents too.
 Click the tray icon to toggle Homing; right-click for open, pause or resume, and quit.
 Open the gear and search by the **Wi-Fi network name shown in Windows**, or type
 that name manually. Select a suggestion, then press **Save**. Filtering, selection
-and leaving the field do not save. **Use current network** saves the currently
-connected network in one step when it can be matched reliably to a saved entry;
-it explains when it is unavailable. Homing never requests Location access.
+and leaving the field do not save. **Use current** fills the reliably identified
+current network into the draft; press **Save** to commit it. The input, Save and
+Use current share one row. The shortcut explains when it is unavailable.
+Homing never requests Location access.
 Windows must already have the network saved. Invalid, removed or ambiguous network
 names leave the previous target unchanged. Saving enables reconnect immediately.
 Homing never creates profiles, scans for networks, or asks for passwords.
@@ -95,6 +96,10 @@ An empty target asks you to choose a network; **Reconnecting** means a request i
 awaiting confirmation. A loop mark means the target connection was observed;
 an exclamation mark covers absent, unconfigured or unreadable targets, and pause
 uses two bars. All tray states retain full contrast.
+
+The network card shows **Connected · Protected** and a right-side shield when the
+observed connection matches the configured target, guarding is unpaused, and no
+guard error is present.
 
 ## Preview and contribute
 
