@@ -55,13 +55,14 @@ jobs:
         with:
           workspaces: src-tauri -> target
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml
-      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked --lib wifi::tests::software_radio_is_restored_before_the_real_connection_request_path -- --nocapture
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
       - if: always()
-        run: cargo test --manifest-path src-tauri/Cargo.toml --locked --test reconnect early_notification_does_not_strand_guard_on_another_network -- --nocapture
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked -- --nocapture
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: formatted-recovery-source
           path: |
+            src-tauri/src/core.rs
             src-tauri/src/wifi.rs
             src-tauri/tests/reconnect.rs

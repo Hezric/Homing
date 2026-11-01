@@ -25,13 +25,25 @@ loop and extra sixty-second wait after command failure govern Homing.
   missing adapters, a connected adapter without a readable name, and API failures
   enter **Can't read Wi-Fi state**, clear stale network text, and never connect.
   Observation retries after one second, including while paused or unconfigured.
-- For a known absent target, request `netsh wlan connect name=<profile>`. Use
-  separate process arguments and an absolute system executable path.
+- A dormant adapter is known disconnected only when its WLAN PHYs confirm software
+  radio off with hardware radio on. Other dormant, unknown, missing or unreadable
+  adapters still block reconnect.
+- For a known absent target, enumerate the adapters containing the exact saved
+  profile and read their WLAN radio state. Enable software-off PHYs whose hardware
+  radio is on with `WlanSetInterface`, then request `netsh wlan connect name=<profile>`.
+  Already enabled radios are not rewritten. Missing profiles, unknown radio state,
+  hardware-off radios and Windows query/control failures are reported through the
+  existing 61-second failure cooldown. Hardware switches, administrator-disabled
+  adapters and global airplane mode are not changed; resolve those in Windows.
+  Use separate process arguments and an absolute system executable path.
 - An accepted request enters reconnecting and schedules verification after one
   second. Command failure enters the can’t-reach state and schedules retry after 61 seconds.
 - Notifications refresh observed state but never shorten a pending retry cooldown.
-  Observing the target cancels retry timing immediately. A healthy connection has
-  no polling timer when notifications are available. Last reconnect records accepted
+  Observing the target cancels a failed-request cooldown immediately. Healthy
+  connections retain one-second read-only checks: ACM notifications can arrive
+  before IP Helper/NLM settles or omit a radio change. These checks eventually
+  observe a manual switch or software-off radio even without another notification.
+  Last reconnect records accepted
   requests, not confirmed success, in Unix seconds for this process lifetime.
 - A missing profile disables reconnect. Profile validation rejects blank names,
   embedded NUL/newlines, and names longer than 255 UTF-16 code units.
@@ -46,7 +58,7 @@ a matching target uses the legacy one-second observation loop; absent targets
 retain the normal one-second/61-second request timing. Paused fallback checks only
 observe, and pause expiry still resumes on time. An unconfigured app retries
 registration after 61 seconds without issuing connect requests. Successful
-registration removes healthy-state polling immediately.
+registration clears the notification error; healthy-state checks continue.
 
 ## Pause and settings
 
@@ -144,14 +156,14 @@ An observed connection to the configured target uses Wi-Fi arcs and a loop mark.
 
 ## Verification
 
-Run `.github/workflows/ci.yml` locally: format, clippy, simulated Rust and frontend
+GitHub Actions runs `.github/workflows/ci.yml`: format, clippy, simulated Rust and frontend
 tests, and the production Tauri build. `vp run test:browser` uses Playwright Chromium to
 exercise real rendered selection, rejected/stale saves, Unicode, IME, keyboard
 scrolling and the footer boundary in both themes and languages. The ignored
 `wifi::tests::read_only_saved_networks` diagnostic performs only native read queries
 and reports counts/identity availability without printing names. Integration tests cover legacy substring
 selection, retry timing and notification coalescing, pause expiry/manual resume,
-notification fallback/recovery, settings Unicode round-trip and malformed fallback.
+notification fallback/recovery, software-radio request ordering and failure cooldown, native WLAN radio payload bounds, conservative adapter classification, settings Unicode round-trip and malformed fallback.
 Shell placement tests cover
 four taskbar edges, negative monitor coordinates and 100–200% scaling.
 

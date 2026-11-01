@@ -9,7 +9,10 @@ use windows::Win32::{
     Foundation::HANDLE,
     NetworkManagement::{
         IpHelper::{FreeMibTable, GetIfTable2, IF_TYPE_IEEE80211},
-        Ndis::{IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
+        Ndis::{
+            IfOperStatusDormant, IfOperStatusDown,
+            IfOperStatusLowerLayerDown, IfOperStatusUp,
+        },
         WiFi::*,
     },
     Networking::NetworkListManager::{INetworkListManager, NetworkListManager},
@@ -43,6 +46,10 @@ impl WindowsWifi {
         if self.subscribed {
             return;
         }
+        if !self.handle.is_invalid() {
+            unsafe { WlanCloseHandle(self.handle, None) };
+            self.handle = HANDLE::default();
+        }
         if self.handle.is_invalid() {
             let mut version = 0;
             let code = unsafe { WlanOpenHandle(2, None, &mut version, &mut self.handle) };
@@ -62,12 +69,7 @@ impl WindowsWifi {
                 None,
             )
         };
-        if code != 0 {
-            unsafe {
-                WlanCloseHandle(self.handle, None);
-            }
-            self.handle = HANDLE::default();
-        }
+        // Keep the query/control handle usable even if notifications cannot register.
         self.subscribed = code == 0;
         self.notification_error = if self.subscribed {
             None
@@ -126,7 +128,7 @@ impl WifiBackend for WindowsWifi {
     }
     fn inspect(&mut self) -> Result<Network, String> {
         self.subscribe();
-        inspect_network().map_err(|e| e.to_string())
+        inspect_network(self.handle).map_err(|e| e.to_string())
     }
     fn connect(&mut self, profile: &str) -> Result<(), String> {
         connect_profile(&mut NativeConnection(self.handle), profile)
@@ -137,7 +139,6 @@ struct Radio {
     adapter: windows_core::GUID,
     state: WLAN_PHY_RADIO_STATE,
 }
-#[allow(dead_code)]
 trait ConnectionApi {
     fn radios(&mut self, profile: &str) -> Result<Vec<Radio>, String>;
     fn enable(&mut self, radio: &Radio) -> Result<(), String>;
@@ -145,6 +146,30 @@ trait ConnectionApi {
 }
 fn connect_profile(api: &mut impl ConnectionApi, profile: &str) -> Result<(), String> {
     validate_profile(profile)?;
+    let radios = api.radios(profile)?;
+    if radios.is_empty() {
+        return Err("The saved Wi-Fi profile has no available radio".into());
+    }
+    if radios.iter().any(|radio| {
+        ![dot11_radio_state_on, dot11_radio_state_off].contains(&radio.state.dot11SoftwareRadioState)
+            || ![dot11_radio_state_on, dot11_radio_state_off]
+                .contains(&radio.state.dot11HardwareRadioState)
+    }) {
+        return Err("Can't read Wi-Fi radio state".into());
+    }
+    if !radios
+        .iter()
+        .any(|radio| radio.state.dot11HardwareRadioState == dot11_radio_state_on)
+    {
+        return Err("The Wi-Fi hardware radio is off; turn it on in Windows or on the device".into());
+    }
+    for radio in &radios {
+        if radio.state.dot11HardwareRadioState == dot11_radio_state_on
+            && radio.state.dot11SoftwareRadioState == dot11_radio_state_off
+        {
+            api.enable(radio)?;
+        }
+    }
     api.request(profile)
 }
 struct NativeConnection(HANDLE);
@@ -163,7 +188,8 @@ impl ConnectionApi for NativeConnection {
             let mut radios = Vec::new();
             for interface in interfaces {
                 let mut profiles = WlanMemory(std::ptr::null_mut());
-                let code = WlanGetProfileList(self.0, &interface.InterfaceGuid, None, &mut profiles.0);
+                let code =
+                    WlanGetProfileList(self.0, &interface.InterfaceGuid, None, &mut profiles.0);
                 if code != 0 || profiles.0.is_null() {
                     return Err(format!("Can't read saved Wi-Fi profiles ({code})"));
                 }
@@ -171,24 +197,12 @@ impl ConnectionApi for NativeConnection {
                     (*profiles.0).ProfileInfo.as_ptr(),
                     (*profiles.0).dwNumberOfItems as usize,
                 );
-                if !profiles.iter().any(|entry| profile_name(&entry.strProfileName).is_ok_and(|name| name == profile)) {
+                if !profiles.iter().any(|entry| {
+                    profile_name(&entry.strProfileName).is_ok_and(|name| name == profile)
+                }) {
                     continue;
                 }
-                let mut data = WlanMemory(std::ptr::null_mut::<c_void>());
-                let mut size = 0;
-                let code = WlanQueryInterface(self.0, &interface.InterfaceGuid, wlan_intf_opcode_radio_state, None, &mut size, &mut data.0, None);
-                if code != 0 || data.0.is_null() || (size as usize) < std::mem::size_of::<WLAN_RADIO_STATE>() {
-                    return Err(format!("Can't read Wi-Fi radio state ({code})"));
-                }
-                let state = &*data.0.cast::<WLAN_RADIO_STATE>();
-                let count = state.dwNumberOfPhys as usize;
-                if count == 0 || count > state.PhyRadioState.len() {
-                    return Err("Can't read Wi-Fi radio PHYs".into());
-                }
-                radios.extend(state.PhyRadioState[..count].iter().map(|state| Radio {
-                    adapter: interface.InterfaceGuid,
-                    state: *state,
-                }));
+                radios.extend(query_radios(self.0, interface.InterfaceGuid)?);
             }
             Ok(radios)
         }
@@ -197,14 +211,65 @@ impl ConnectionApi for NativeConnection {
         let mut state = radio.state;
         state.dot11SoftwareRadioState = dot11_radio_state_on;
         let code = unsafe {
-            WlanSetInterface(self.0, &radio.adapter, wlan_intf_opcode_radio_state, std::mem::size_of_val(&state) as u32, (&state as *const WLAN_PHY_RADIO_STATE).cast(), None)
+            WlanSetInterface(
+                self.0,
+                &radio.adapter,
+                wlan_intf_opcode_radio_state,
+                std::mem::size_of_val(&state) as u32,
+                (&state as *const WLAN_PHY_RADIO_STATE).cast(),
+                None,
+            )
         };
-        if code == 0 { Ok(()) } else { Err(format!("Windows could not enable the Wi-Fi software radio ({code})")) }
+        if code == 0 {
+            Ok(())
+        } else {
+            Err(format!(
+                "Windows could not enable the Wi-Fi software radio ({code})"
+            ))
+        }
     }
     fn request(&mut self, profile: &str) -> Result<(), String> {
         // Keep the old saved-profile selection without passing user text to cmd.exe.
         netsh(&["wlan", "connect", &format!("name={profile}")])
     }
+}
+fn query_radios(handle: HANDLE, adapter: windows_core::GUID) -> Result<Vec<Radio>, String> {
+    unsafe {
+        let mut data = WlanMemory(std::ptr::null_mut::<c_void>());
+        let mut size = 0;
+        let code = WlanQueryInterface(
+            handle,
+            &adapter,
+            wlan_intf_opcode_radio_state,
+            None,
+            &mut size,
+            &mut data.0,
+            None,
+        );
+        if code != 0
+            || data.0.is_null()
+            || (size as usize) < std::mem::size_of::<WLAN_RADIO_STATE>()
+        {
+            return Err(format!("Can't read Wi-Fi radio state ({code})"));
+        }
+        radios_from_state(adapter, &*data.0.cast::<WLAN_RADIO_STATE>())
+    }
+}
+fn radios_from_state(
+    adapter: windows_core::GUID,
+    state: &WLAN_RADIO_STATE,
+) -> Result<Vec<Radio>, String> {
+    let count = state.dwNumberOfPhys as usize;
+    if count == 0 || count > state.PhyRadioState.len() {
+        return Err("Can't read Wi-Fi radio PHYs".into());
+    }
+    Ok(state.PhyRadioState[..count]
+        .iter()
+        .map(|state| Radio {
+            adapter,
+            state: *state,
+        })
+        .collect())
 }
 // WLAN owns these allocations, including on early-return error paths.
 struct WlanMemory<T>(*mut T);
@@ -426,7 +491,7 @@ fn read_saved_networks(handle: HANDLE) -> Result<SavedNetworks, String> {
     };
     read().map_err(|_| "networksUnavailable".into())
 } // The worker owns the COM apartment; these observations do not require Location.
-fn inspect_network() -> windows_core::Result<Network> {
+fn inspect_network(handle: HANDLE) -> windows_core::Result<Network> {
     unsafe {
         let mut table = std::ptr::null_mut();
         GetIfTable2(&mut table).ok()?;
@@ -447,11 +512,19 @@ fn inspect_network() -> windows_core::Result<Network> {
         let mut names = Vec::new();
         for adapter in adapters {
             if adapter.OperStatus != IfOperStatusUp {
-                adapter_name(adapter.OperStatus, None)?;
+                let software_off = adapter.OperStatus == IfOperStatusDormant
+                    && query_radios(handle, adapter.InterfaceGuid)
+                        .map_err(|_| unreadable())?
+                        .iter()
+                        .all(|radio| {
+                            radio.state.dot11SoftwareRadioState == dot11_radio_state_off
+                                && radio.state.dot11HardwareRadioState == dot11_radio_state_on
+                        });
+                adapter_name(adapter.OperStatus, None, software_off)?;
                 continue;
             }
             let name = network_description(adapter.InterfaceGuid)?;
-            names.extend(adapter_name(adapter.OperStatus, name)?);
+            names.extend(adapter_name(adapter.OperStatus, name, false)?);
         }
         Ok(Network {
             current: names.first().cloned(),
@@ -468,8 +541,11 @@ fn unreadable() -> windows_core::Error {
 fn adapter_name(
     status: windows::Win32::NetworkManagement::Ndis::IF_OPER_STATUS,
     name: Option<String>,
+    software_off: bool,
 ) -> windows_core::Result<Option<String>> {
-    if [IfOperStatusDown, IfOperStatusLowerLayerDown].contains(&status) {
+    if [IfOperStatusDown, IfOperStatusLowerLayerDown].contains(&status)
+        || (status == IfOperStatusDormant && software_off)
+    {
         Ok(None)
     } else if status == IfOperStatusUp {
         name.filter(|name| !name.is_empty())
@@ -483,38 +559,147 @@ fn adapter_name(
 mod tests {
     use super::*;
     struct RadioSimulation {
-        software_off: bool,
+        software: DOT11_RADIO_STATE,
+        hardware: DOT11_RADIO_STATE,
+        missing: bool,
+        fail_at: Option<&'static str>,
         events: Vec<&'static str>,
     }
+    impl Default for RadioSimulation {
+        fn default() -> Self {
+            Self {
+                software: dot11_radio_state_off,
+                hardware: dot11_radio_state_on,
+                missing: false,
+                fail_at: None,
+                events: Vec::new(),
+            }
+        }
+    }
     impl ConnectionApi for RadioSimulation {
-        fn radios(&mut self, _: &str) -> Result<Vec<Radio>, String> {
+        fn radios(&mut self, profile: &str) -> Result<Vec<Radio>, String> {
+            assert_eq!(profile, "Home alias");
             self.events.push("query");
+            if self.fail_at == Some("query") {
+                return Err("query denied".into());
+            }
+            if self.missing {
+                return Ok(Vec::new());
+            }
             Ok(vec![Radio {
-                adapter: windows_core::GUID::zeroed(),
+                adapter: windows_core::GUID::from_u128(17),
                 state: WLAN_PHY_RADIO_STATE {
                     dwPhyIndex: 3,
-                    dot11SoftwareRadioState: if self.software_off { dot11_radio_state_off } else { dot11_radio_state_on },
-                    dot11HardwareRadioState: dot11_radio_state_on,
+                    dot11SoftwareRadioState: self.software,
+                    dot11HardwareRadioState: self.hardware,
                 },
             }])
         }
         fn enable(&mut self, radio: &Radio) -> Result<(), String> {
+            assert_eq!(radio.adapter, windows_core::GUID::from_u128(17));
             assert_eq!(radio.state.dwPhyIndex, 3);
             self.events.push("enable");
-            self.software_off = false;
+            if self.fail_at == Some("enable") {
+                return Err("enable denied".into());
+            }
+            self.software = dot11_radio_state_on;
             Ok(())
         }
         fn request(&mut self, profile: &str) -> Result<(), String> {
             assert_eq!(profile, "Home alias");
             self.events.push("connect");
-            if self.software_off { Err("radio is off".into()) } else { Ok(()) }
+            if self.software != dot11_radio_state_on || self.fail_at == Some("connect") {
+                Err("connect failed".into())
+            } else {
+                Ok(())
+            }
         }
     }
     #[test]
     fn software_radio_is_restored_before_the_real_connection_request_path() {
-        let mut api = RadioSimulation { software_off: true, events: Vec::new() };
+        let mut api = RadioSimulation::default();
         assert!(connect_profile(&mut api, "Home alias").is_ok());
         assert_eq!(api.events, ["query", "enable", "connect"]);
+        api.events.clear();
+        assert!(connect_profile(&mut api, "Home alias").is_ok());
+        assert_eq!(api.events, ["query", "connect"], "an enabled radio is not rewritten");
+    }
+    #[test]
+    fn radio_recovery_stops_on_unknown_hardware_missing_profile_and_os_failures() {
+        for (software, hardware, missing, fail_at, expected) in [
+            (dot11_radio_state_unknown, dot11_radio_state_on, false, None, vec!["query"]),
+            (dot11_radio_state_off, dot11_radio_state_unknown, false, None, vec!["query"]),
+            (dot11_radio_state_off, dot11_radio_state_off, false, None, vec!["query"]),
+            (dot11_radio_state_off, dot11_radio_state_on, true, None, vec!["query"]),
+            (dot11_radio_state_off, dot11_radio_state_on, false, Some("query"), vec!["query"]),
+            (dot11_radio_state_off, dot11_radio_state_on, false, Some("enable"), vec!["query", "enable"]),
+            (dot11_radio_state_on, dot11_radio_state_on, false, Some("connect"), vec!["query", "connect"]),
+        ] {
+            let mut api = RadioSimulation { software, hardware, missing, fail_at, events: Vec::new() };
+            assert!(connect_profile(&mut api, "Home alias").is_err());
+            assert_eq!(api.events, expected);
+        }
+        let mut api = RadioSimulation::default();
+        for profile in ["", "bad\nprofile", "bad\0profile"] {
+            assert!(connect_profile(&mut api, profile).is_err());
+        }
+        assert!(api.events.is_empty(), "invalid profiles never reach Windows");
+    }
+    #[test]
+    fn native_radio_payload_preserves_adapter_and_phy_identity_and_rejects_bad_counts() {
+        let adapter = windows_core::GUID::from_u128(23);
+        let mut state = WLAN_RADIO_STATE::default();
+        assert!(radios_from_state(adapter, &state).is_err());
+        state.dwNumberOfPhys = 65;
+        assert!(radios_from_state(adapter, &state).is_err());
+        state.dwNumberOfPhys = 2;
+        state.PhyRadioState[0].dwPhyIndex = 3;
+        state.PhyRadioState[1].dwPhyIndex = 8;
+        let radios = radios_from_state(adapter, &state).unwrap();
+        assert_eq!(radios.len(), 2);
+        assert!(radios.iter().all(|radio| radio.adapter == adapter));
+        assert_eq!(radios[0].state.dwPhyIndex, 3);
+        assert_eq!(radios[1].state.dwPhyIndex, 8);
+    }
+    #[test]
+    fn radio_recovery_obeys_guard_pause_configuration_observation_and_failure_cooldown() {
+        use crate::{core::{Connection, Reconnector}, settings::Settings};
+        struct Backend {
+            api: RadioSimulation,
+            unreadable: bool,
+        }
+        impl WifiBackend for Backend {
+            fn inspect(&mut self) -> Result<Network, String> {
+                if self.unreadable {
+                    return Err("unknown adapter".into());
+                }
+                let current = adapter_name(IfOperStatusDown, None, false).unwrap();
+                Ok(Network { current, interface_text: String::new() })
+            }
+            fn connect(&mut self, profile: &str) -> Result<(), String> {
+                connect_profile(&mut self.api, profile)
+            }
+        }
+        for (configured, paused, unreadable) in [(false, false, false), (true, true, false), (true, false, true)] {
+            let mut guard = Reconnector::new(Settings { profile: if configured { "Home alias".into() } else { String::new() }, ..Settings::default() });
+            let mut wifi = Backend { api: RadioSimulation::default(), unreadable };
+            if paused { guard.pause(0); }
+            guard.reconcile(&mut wifi, || 0, 1000);
+            assert!(wifi.api.events.is_empty(), "guard restrictions cover radio writes too");
+        }
+        let mut guard = Reconnector::new(Settings { profile: "Home alias".into(), ..Settings::default() });
+        let mut wifi = Backend { api: RadioSimulation { fail_at: Some("enable"), ..Default::default() }, unreadable: false };
+        guard.reconcile(&mut wifi, || 0, 1000);
+        assert_eq!(guard.state(0).connection, Connection::Disconnected);
+        assert!(guard.state(0).error.unwrap().contains("enable denied"));
+        assert_eq!(guard.deadline(0), Some(61_000));
+        guard.reconcile(&mut wifi, || 1000, 1001);
+        assert_eq!(wifi.api.events, ["query", "enable"]);
+        wifi.api.fail_at = None;
+        guard.reconcile(&mut wifi, || 61_000, 1061);
+        assert_eq!(wifi.api.events, ["query", "enable", "query", "enable", "connect"]);
+        assert_eq!(guard.state(61_000).connection, Connection::Reconnecting);
+        assert_eq!(guard.deadline(61_000), Some(62_000));
     }
     #[test]
     fn saved_metadata_extracts_ssids_without_displaying_profile_aliases() {
@@ -572,16 +757,18 @@ mod tests {
             IfOperStatusNotPresent, IfOperStatusUnknown,
         };
         for status in [IfOperStatusDown, IfOperStatusLowerLayerDown] {
-            assert_eq!(adapter_name(status, None).unwrap(), None);
+            assert_eq!(adapter_name(status, None, false).unwrap(), None);
         }
-        for status in [IfOperStatusNotPresent, IfOperStatusUnknown, IfOperStatusUp] {
-            assert!(adapter_name(status, None).is_err());
+        for status in [IfOperStatusNotPresent, IfOperStatusUnknown, IfOperStatusDormant, IfOperStatusUp] {
+            assert!(adapter_name(status, None, false).is_err());
         }
-        assert!(adapter_name(IfOperStatusUp, Some(String::new())).is_err());
+        assert!(adapter_name(IfOperStatusUp, Some(String::new()), false).is_err());
+        assert_eq!(adapter_name(IfOperStatusDormant, None, true).unwrap(), None);
+        assert!(adapter_name(IfOperStatusUnknown, None, true).is_err());
         // Network descriptions keep actual numeric endings; never strip a suffix.
         for name in ["Home", "HomeNetwork_5", "Studio 3"] {
             assert_eq!(
-                adapter_name(IfOperStatusUp, Some(name.into()))
+                adapter_name(IfOperStatusUp, Some(name.into()), false)
                     .unwrap()
                     .as_deref(),
                 Some(name)
