@@ -9,7 +9,7 @@ use windows::Win32::{
     Foundation::HANDLE,
     NetworkManagement::{
         IpHelper::{FreeMibTable, GetIfTable2, IF_TYPE_IEEE80211},
-        Ndis::{dot11_radio_state_off, dot11_radio_state_on, IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
+        Ndis::{IfOperStatusDown, IfOperStatusLowerLayerDown, IfOperStatusUp},
         WiFi::*,
     },
     Networking::NetworkListManager::{INetworkListManager, NetworkListManager},
