@@ -1,8 +1,8 @@
 import { text, validNetwork } from "./state.js";
 
 export function createProfilePicker(container, { load, save }) {
-  container.innerHTML = `<div class="profile-heading"><h2><label id="profile-label" for="profile"></label></h2><button id="use-current-profile" class="button" type="button" aria-describedby="current-profile-hint"></button></div>
-    <div class="profile-row"><input id="profile" class="profile" type="text" maxlength="32" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-list" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button></div>
+  container.innerHTML = `<div class="profile-heading"><h2><label id="profile-label" for="profile"></label></h2></div>
+    <div class="profile-row"><input id="profile" class="profile" type="text" maxlength="32" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="profile-list" aria-describedby="profile-hint profile-error"><button class="button" id="save-profile" type="button"></button><button id="use-current-profile" class="button" type="button" aria-describedby="current-profile-hint"></button></div>
     <p id="profile-hint" class="profile-hint"></p><p id="current-profile-hint" class="profile-hint"></p><button id="retry-profiles" class="button" type="button" hidden></button>
     <p id="profile-error" class="profile-error" role="alert" hidden></p>
     <div id="profile-popup" class="profile-popup" popover="manual"><div id="profile-list" role="listbox" aria-labelledby="profile-label"></div><p id="profile-list-status" role="status"></p></div>`;
@@ -132,9 +132,9 @@ export function createProfilePicker(container, { load, save }) {
     close();
     draw();
   }
-  async function submit(useCurrent = false) {
+  async function submit() {
     close();
-    if (!useCurrent && !validNetwork(input.value)) {
+    if (!validNetwork(input.value)) {
       errorKey = "profileError";
       draw();
       return;
@@ -143,7 +143,7 @@ export function createProfilePicker(container, { load, save }) {
     errorKey = "";
     draw();
     const submittedRevision = revision;
-    const result = await save(useCurrent ? null : input.value);
+    const result = await save(input.value);
     saving = false;
     if (result.ok) {
       saved = result.profile;
@@ -213,7 +213,7 @@ export function createProfilePicker(container, { load, save }) {
     if (!container.contains(event.target)) close();
   });
   saveButton.addEventListener("click", () => submit());
-  currentButton.addEventListener("click", () => submit(true));
+  currentButton.addEventListener("click", () => select(catalog.current));
   retry.addEventListener("click", refresh);
   window.addEventListener("resize", position);
   document.addEventListener("scroll", position, true);

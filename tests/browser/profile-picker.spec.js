@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+test.use({ deviceScaleFactor: 2 });
+
 for (const lang of ["en", "zh"])
   for (const theme of ["light", "dark"]) {
     test(`saved network names filter, select and stay above the footer (${lang}, ${theme})`, async ({
@@ -20,7 +22,7 @@ for (const lang of ["en", "zh"])
       const list = page.getByRole("listbox");
       await expect(list).toBeVisible();
       await expect(page.locator("#use-current-profile")).toHaveText(
-        lang === "en" ? "Use current" : "使用当前网络",
+        lang === "en" ? "Use current" : "使用当前",
       );
       const fieldBox = await input.boundingBox();
       const popupBox = await page.locator("#profile-popup").boundingBox();
@@ -39,12 +41,17 @@ for (const lang of ["en", "zh"])
       expect(
         await page.locator("#profile-popup").evaluate((el) => getComputedStyle(el).borderTopWidth),
       ).toBe("0px");
-      const labelBox = await page.locator("#profile-label").boundingBox();
+      const saveBox = await page.locator("#save-profile").boundingBox();
       const currentBox = await page.locator("#use-current-profile").boundingBox();
-      expect(
-        Math.abs(labelBox.y + labelBox.height / 2 - currentBox.y - currentBox.height / 2),
-      ).toBeLessThan(2);
-      expect(currentBox.y + currentBox.height).toBeLessThanOrEqual(fieldBox.y);
+      expect(saveBox.width).toBeCloseTo(currentBox.width, 1);
+      expect(saveBox.height).toBeCloseTo(currentBox.height, 1);
+      expect(saveBox.y).toBeCloseTo(fieldBox.y, 1);
+      expect(currentBox.y).toBeCloseTo(fieldBox.y, 1);
+      expect(fieldBox.x + fieldBox.width).toBeLessThan(saveBox.x);
+      expect(saveBox.x + saveBox.width).toBeLessThan(currentBox.x);
+      expect(currentBox.x + currentBox.width).toBeLessThanOrEqual(
+        (await panel.boundingBox()).x + (await panel.boundingBox()).width,
+      );
       expect(await list.getByRole("option").count()).toBeGreaterThan(20);
       const bounds = await list.evaluate((el) => ({
         bottom: el.getBoundingClientRect().bottom,
@@ -121,7 +128,12 @@ test("current shortcut resolves network names and disables uncertain or failed l
   await page.getByRole("combobox").fill("Studio 02");
   await page.locator("#save-profile").click();
   await expect(page.locator("#target")).toHaveText("Studio 02");
+  await expect(page.locator("#protection-shield")).toBeHidden();
+  await expect(page.locator("#current-status")).toHaveText("Connected");
   await page.locator("#use-current-profile").click();
+  await expect(page.getByRole("combobox")).toHaveValue("Home Wi-Fi");
+  await expect(page.locator("#target")).toHaveText("Studio 02");
+  await page.locator("#save-profile").click();
   await expect(page.locator("#target")).toHaveText("Home Wi-Fi");
   expect(await page.locator("body").textContent()).not.toContain("Hidden alias");
   await page.goto("/?view=settings&profiles=no-profile-identity");
@@ -155,7 +167,7 @@ test("current shortcut resolves network names and disables uncertain or failed l
   }
 });
 
-test("compact geometry, long names and keyboard scrolling remain accessible", async ({ page }) => {
+test("compact geometry, long names and keyboard scrolling remain accessible", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 360, height: 480 });
   await page.goto("/?view=settings&theme=dark");
   await page.locator("body").evaluate((el) => el.classList.add("native"));
@@ -176,6 +188,10 @@ test("compact geometry, long names and keyboard scrolling remain accessible", as
   const option = list.getByRole("option").first();
   await expect(option).toHaveAttribute("title", /Long/);
   expect(await option.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await input.fill("Long" + "W".repeat(28));
+  await input.press("End");
+  expect(await input.evaluate((el) => el.scrollWidth > el.clientWidth && el.scrollLeft > 0)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("long-network-input-200.png") });
   await input.press("Tab");
   await expect(list).toBeHidden();
 });

@@ -20,6 +20,7 @@ import {
   parsePauseMinutes,
   pauseLabel,
   connectionLabel,
+  isProtected,
   reconnectLabel,
 } from "./state.js";
 import "./style.css";
@@ -28,10 +29,10 @@ const glyphs = import.meta.glob("../assets/fluent-v1/*.svg", {
   import: "default",
   eager: true,
 });
-const icon = (name, size = 24) =>
+const icon = (name, size = 24, filled = false) =>
   (
-    glyphs[`../assets/fluent-v1/${name}_${size}_regular.svg`] ||
-    sharedGlyph(`${name}_${size}_regular`)
+    glyphs[`../assets/fluent-v1/${name}_${size}_${filled ? "filled" : "regular"}.svg`] ||
+    sharedGlyph(`${name}_${size}_${filled ? "filled" : "regular"}`)
   ).replace("<svg ", '<svg aria-hidden="true" focusable="false" ');
 const native = isTauri(),
   params = new URLSearchParams(location.search);
@@ -64,17 +65,14 @@ if (!native && ["light", "dark"].includes(params.get("theme")))
 const root = document.querySelector("#app");
 root.innerHTML = flyout({
   name: "Homing",
-  card: statusCard(""),
+  card: statusCard(`<span id="protection-shield" aria-hidden="true" hidden>${icon("shield_checkmark", 16, true)}</span>`),
   main: `<section id="network-view"><div class="device-heading"><h1 id="reconnect-label"></h1><span id="mode" class="mode"></span></div><section class="device-list" aria-labelledby="reconnect-label"><div class="device-row"><span class="device-icon">${icon("wifi_1", 20)}</span><span id="target-label" class="row-label"></span><span class="device-name row-value" id="target"></span></div><div class="device-row"><span class="device-icon">${icon("arrow_sync", 16)}</span><span id="last-label" class="row-label"></span><time class="device-name row-value" id="last"></time></div></section><div id="setup-wrap" class="message" aria-hidden="true"><div><p id="setup" class="setup"></p></div></div></section>`,
   settings: `<div id="profile-picker"></div>${pauseSettings()}${languageSettings("Homing", version, icon("open", 24))}`,
   gear: icon("settings", 24),
 });
 const profilePicker = createProfilePicker(document.querySelector("#profile-picker"), {
   load: () => (native ? invoke("saved_networks") : mockSavedNetworks(params.get("profiles"))),
-  save: (profile) =>
-    change(
-      profile === null ? { type: "useCurrentNetwork" } : { type: "setNetwork", network: profile },
-    ),
+  save: (network) => change({ type: "setNetwork", network }),
 });
 const { setContent, setText, animateView, reducedMotion, motion } = createMotion(
   root,
@@ -97,7 +95,7 @@ function render() {
   if (!native) language = state.languageMode === "system" ? systemLanguage : state.languageMode;
   const t = text[language],
     paused = state.pauseRemaining > 0,
-    inactive = paused || state.connection !== "connected" || !state.configured;
+    inactive = !isProtected(state);
   document.documentElement.lang = language === "zh" ? "zh-Hans" : "en";
   if (state.accent) {
     document.documentElement.style.setProperty("--accent", state.accent);
@@ -106,6 +104,7 @@ function render() {
   }
   root.querySelector(".flyout").setAttribute("aria-label", t.app);
   root.querySelector(".badge").classList.toggle("inactive", inactive);
+  document.querySelector("#protection-shield").hidden = inactive;
   setContent("current-icon", icon(paused ? "pause" : "wifi_1"), true);
   const current = state.current || (state.connection === "unreadable" ? t.unreadable : t.none);
   setText("current-name", current);
