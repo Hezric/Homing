@@ -9,7 +9,7 @@ fn settings_roundtrip_preserves_unicode_spaces_and_delimiters() {
     };
     assert_eq!(Settings::parse(&settings.encode()).unwrap(), settings);
     assert_eq!(
-        Settings::parse("[Settings]\nPauseMinutes=720\n")
+        Settings::parse("pause_minutes=720\n")
             .unwrap()
             .pause_minutes,
         720
@@ -18,17 +18,19 @@ fn settings_roundtrip_preserves_unicode_spaces_and_delimiters() {
 #[test]
 fn malformed_settings_fall_back_without_overwriting_the_original() {
     for input in [
-        "[Settings",
+        "[broken",
         "garbage",
-        "[Settings]\nProfileHex=zz",
-        "[Settings]\nProfileHex=ff",
-        "[Settings]\nProfileHex=e4b8",
-        "[Settings]\nProfileHex=00",
-        "[Settings]\nProfileHex=20",
-        "[Settings]\nPauseMinutes=0",
-        "[Settings]\nPauseMinutes=721",
-        "[Settings]\nPauseMinutes=1.5",
-        "[Settings]\nLanguage=fr",
+        "profile=5",
+        "profile=' '",
+        "profile=\"Home\\n\"",
+        "profile=\"Home\\u0000\"",
+        "network=' '",
+        "network='a very long SSID exceeds thirty-two bytes'",
+        "pause_minutes=0",
+        "pause_minutes=721",
+        "pause_minutes=1.5",
+        "language='fr'",
+        "unknown=true",
     ] {
         assert!(Settings::parse(input).is_err(), "{input}");
     }
@@ -41,7 +43,7 @@ fn malformed_settings_fall_back_without_overwriting_the_original() {
             .as_nanos()
     ));
     std::fs::create_dir(&directory).unwrap();
-    let path = directory.join("Homing.ini");
+    let path = directory.join("Homing.toml");
     let result = std::panic::catch_unwind(|| {
         assert_eq!(Settings::load(&path), (Settings::default(), None));
         std::fs::write(&path, "broken").unwrap();
@@ -57,7 +59,7 @@ fn malformed_settings_fall_back_without_overwriting_the_original() {
         assert_eq!(Settings::load(&path), (settings.clone(), None));
         settings.save(&path).unwrap();
         assert_eq!(Settings::load(&path), (settings, None));
-        assert!(!path.with_extension("ini.tmp").exists());
+        assert!(!path.with_extension("toml.tmp").exists());
     });
     std::fs::remove_dir_all(&directory).unwrap();
     result.unwrap();
@@ -95,7 +97,7 @@ fn network_names_resolve_internal_aliases_and_failed_saves_preserve_settings() {
     }
     let directory = std::env::temp_dir().join(format!("homing-target-{}", std::process::id()));
     std::fs::create_dir_all(&directory).unwrap();
-    let path = directory.join("Homing.ini");
+    let path = directory.join("Homing.toml");
     let result = std::panic::catch_unwind(|| {
         let home = SavedNetwork {
             name: "家里的网络".into(),
@@ -223,10 +225,24 @@ fn current_mapping_uses_only_the_same_adapters_saved_metadata() {
         local.name_for_profile("Alias A").as_deref(),
         Some("Network A")
     );
-    assert_eq!(
-        Settings::parse("[Settings]\nProfileHex=486f6d65\n")
-            .unwrap()
-            .network,
-        ""
-    );
+    assert_eq!(Settings::parse("profile='Home'\n").unwrap().network, "");
+}
+
+#[test]
+fn toml_settings_preserve_target_names_without_ini_compatibility() {
+    let settings = Settings::parse(
+        r#"
+profile = ' Alias = [x]; & " 中文 '
+network = "家里的 Wi-Fi"
+language = "zh"
+pause_minutes = 45
+"#,
+    )
+    .unwrap();
+    assert_eq!(settings.profile, " Alias = [x]; & \" 中文 ");
+    assert_eq!(settings.network, "家里的 Wi-Fi");
+    assert_eq!(settings.language, "zh");
+    assert_eq!(settings.pause_minutes, 45);
+    assert_eq!(Settings::parse(&settings.encode()).unwrap(), settings);
+    assert!(Settings::parse("[Settings]\nProfileHex=486f6d65").is_err());
 }

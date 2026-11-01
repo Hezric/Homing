@@ -81,8 +81,8 @@ Pause presets are 15, 30, 60, and 120 minutes. Custom durations save on Enter or
 focus loss. The default is 60 minutes. Editing the duration preserves an active
 pause deadline; restarting resumes reconnect. Pause does not disconnect Wi-Fi.
 
-Settings live in `%APPDATA%\Homing\Homing.ini`. The network name and internal connection identity are UTF-8 hex-encoded
-so Unicode, spaces, and INI punctuation round-trip safely. Changes save atomically.
+Settings live in `%APPDATA%\Homing\Homing.toml`. The TOML file stores the network name and internal connection identity as quoted UTF-8 strings.
+Unicode, spaces and punctuation round-trip safely. Changes save atomically.
 Missing or malformed settings leave reconnect off; malformed files remain intact
 until an explicit settings save. Errors appear in the flyout. If WLAN notifications
 are unavailable, Homing uses timed checks while retrying registration, then stops
