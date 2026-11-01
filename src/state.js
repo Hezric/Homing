@@ -54,6 +54,7 @@ export function mockUpdate(state, action, networkMode = "") {
     state.profile = `Hidden alias for ${network}`;
     state.targetName = network;
     state.configured = true;
+    state.connection = state.current === network ? "connected" : "reconnecting";
   }
   if (action.type === "setPauseMinutes") state.pauseMinutes = action.minutes;
   if (action.type === "setLanguage") state.languageMode = action.language;
@@ -67,6 +68,7 @@ export const text = {
     none: "No Wi-Fi connection",
     unreadable: "Can't read Wi-Fi state",
     connected: "Connected",
+    protected: "Connected · Protected",
     reconnecting: "Reconnecting…",
     disconnected: "Can't reach",
     paused: "Paused",
@@ -90,7 +92,7 @@ export const text = {
     useCurrent: "Use current",
     currentProfileHint:
       "The current network cannot be matched to one saved entry. Choose a network below.",
-    currentProfileReady: "Save the network currently connected in Windows.",
+    currentProfileReady: "Fill in the current network. Select Save to keep it.",
     profilesLoading: "Loading saved networks…",
     networksUnavailable: "Could not read saved networks. Retry the list before saving.",
     profilesEmpty: "No matching saved networks. Check the name in Windows Wi-Fi settings.",
@@ -115,6 +117,7 @@ export const text = {
     none: "未连接 Wi-Fi",
     unreadable: "无法读取 Wi-Fi 状态",
     connected: "已连接",
+    protected: "已连接 · 保护中",
     reconnecting: "正在重连…",
     disconnected: "无法连接",
     paused: "已暂停",
@@ -135,9 +138,9 @@ export const text = {
     setup: "请在设置中选择已保存的 Wi-Fi 网络。",
     profile: "已保存的 Wi-Fi 网络",
     profileHint: "输入系统 Wi-Fi 中显示的网络名，选好后点击保存。",
-    useCurrent: "使用当前网络",
+    useCurrent: "使用当前",
     currentProfileHint: "无法唯一对应当前连接的已保存网络，请从下方选择。",
-    currentProfileReady: "保存 Windows 当前已连接的网络。",
+    currentProfileReady: "填入当前网络，点击保存后生效。",
     profilesLoading: "正在读取已保存的网络…",
     networksUnavailable: "无法读取已保存的网络，请重试列表后再保存。",
     profilesEmpty: "没有匹配的已保存网络，请在 Windows Wi-Fi 设置中核对名称。",
@@ -187,7 +190,11 @@ export function reconnectLabel(state, language) {
     ? `无法连接 ${state.targetName || t.targetUnavailable} · 自动重试中`
     : `Can't reach ${state.targetName || t.targetUnavailable} · retrying automatically`;
 }
+export const isProtected = (state) =>
+  !!state.current && state.configured && state.connection === "connected" &&
+  !(state.pauseRemaining > 0) && !state.error;
 export const connectionLabel = (state, language) =>
+  isProtected(state) ? text[language].protected :
   state.connection === "unreadable"
     ? text[language].unreadable
     : state.current

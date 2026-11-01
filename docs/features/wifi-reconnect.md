@@ -111,19 +111,25 @@ move the active option; Enter selects it into the draft, and Save commits it.
 Enter without an active option saves manual input. Tab closes suggestions without
 saving; Escape closes suggestions before a later Escape dismisses the flyout.
 IME composition does not select or save. Options expose full names accessibly and
-use ellipsis visually. The field label and short current-network button share one
-heading row. Suggestions join the input edge-to-edge at its exact width, excluding
-the Save column. The input has a single bottom accent only while focused and
+use ellipsis visually. The field sits in one row before equal-size Save and Use
+current buttons, in that order, in both languages. Use current fills only the draft;
+Save validates and commits it. Suggestions join the input edge-to-edge at its exact
+width, excluding both button columns. The input has a single bottom accent while focused and
 returns to neutral on blur. The popup stays above the existing footer and scrolls
 internally without increasing panel height. Empty and failed lookups explain their
-state, and Retry is keyboard-accessible. The current-network action saves in one
-step only after the worker repeats its reliable mapping. A pending save updates the
+state, and Retry is keyboard-accessible. The shortcut never saves or connects implicitly.
+A pending save updates the
 committed target when it completes but preserves any draft edited after submission.
 ## Flyout and shell
 
 The current-network card reports the observed Windows network connection separately from the
 target profile's reconnect state. A connection to another network remains visibly
-connected while the target is retrying.
+connected while the target is retrying. When the backend reports a matching configured
+target, an observed current network exists, guarding is unpaused and there is no
+guard error, the card reports “Connected · Protected” and shows a noninteractive
+shield at the right edge. Missing configuration, another network, disconnects,
+pauses and guard errors never activate this protection indicator. The existing
+backend matching result governs this status; display labels are not compared.
 
 The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.1.4/docs/features/tray-shell.md) owns the tray lifecycle, placement, DWM styling and motion; its UI package supplies the shell, status card, pause, language and about controls. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
 

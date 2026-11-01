@@ -78,3 +78,19 @@ test("unreachable target explains automatic retry and missing configuration", ()
     "选择要保持连接的网络",
   );
 });
+
+test("protection follows the domain match, configuration, pause and error state", () => {
+  const matched = { ...mockState(), current: "Windows connection label", targetName: "Saved SSID" };
+  assert.equal(connectionLabel(matched, "en"), "Connected · Protected");
+  assert.equal(connectionLabel(matched, "zh"), "已连接 · 保护中");
+  for (const delta of [
+    { configured: false },
+    { connection: "disconnected" },
+    { pauseRemaining: 60 },
+    { error: "Notification registration unavailable" },
+    { current: null },
+  ]) {
+    assert.doesNotMatch(connectionLabel({ ...matched, ...delta }, "en"), /Protected/);
+    assert.doesNotMatch(connectionLabel({ ...matched, ...delta }, "zh"), /保护中/);
+  }
+});
