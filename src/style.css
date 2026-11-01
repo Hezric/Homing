@@ -49,24 +49,7 @@
   display: flex;
   gap: 8px;
 }
-.profile {
-  min-width: 0;
-  flex: 1;
-  height: 32px;
-  border-radius: 4px;
-  background: var(--card);
-  border: 1px solid var(--cardb);
-  padding: 0 10px;
-  color: var(--text);
-  font: inherit;
-  user-select: text;
-  -webkit-user-select: text;
-}
-.profile:focus {
-  outline: none;
-  border-bottom: 2px solid var(--accent);
-  box-shadow: none;
-}
+.profile { min-width:0; flex:1; }
 .profile[aria-expanded="true"] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .profile[aria-invalid="true"] {
   border-bottom-color: var(--error);
@@ -97,7 +80,7 @@
   margin: 10px 0 6px;
 }
 .settings .profile-heading h2 { margin: 0; }
-.profile-row .button { flex: 0 0 88px; justify-content: center; padding: 0 6px; font-size: 12px; white-space: nowrap; }
+.profile-row .button { flex: none; justify-content: center; padding: 0 6px; font-size: 12px; white-space: nowrap; }
 .button:disabled { opacity: .55; }
 .profile-popup {
   position: fixed;
@@ -109,10 +92,15 @@
   background: var(--card);
   color: var(--text);
   box-shadow: 0 6px 12px #0003;
-  overflow: auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height .2s var(--ease-out), opacity .2s var(--ease-out), display .2s allow-discrete, overlay .2s allow-discrete;
   font: inherit;
   font-size: 13px;
 }
+.profile-popup:popover-open { max-height:var(--popup-height); opacity:1; }
+@starting-style { .profile-popup:popover-open { max-height:0; opacity:0; } }
 #profile-list {
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -145,5 +133,4 @@
   .profile-option[aria-selected="true"] { outline: 1px solid Highlight; outline-offset: -1px; }
 }
 
-#protection-shield { color: var(--accent); flex: none; }
 #protection-shield svg { width: 24px; height: 24px; }

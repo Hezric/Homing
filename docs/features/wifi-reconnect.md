@@ -106,15 +106,21 @@ aliases are never added to observed matching text. Legacy targets whose metadata
 cannot be resolved retain their established matching behavior; that fallback does
 not establish reliable current profile identity.
 
+Opening settings and focusing the field refresh the saved-network catalog without
+disabling an already available current-network shortcut. The shortcut waits for fresh
+current-network metadata before filling the draft and preserves edits made while it waits.
+Retry refreshes a failed lookup.
 The ARIA combobox filters case-insensitively without changing the target. Arrows
 move the active option; Enter selects it into the draft, and Save commits it.
 Enter without an active option saves manual input. Tab closes suggestions without
 saving; Escape closes suggestions before a later Escape dismisses the flyout.
 IME composition does not select or save. Options expose full names accessibly and
-use ellipsis visually. The field sits in one row before equal-size Save and Use
+use ellipsis visually. The field sits in one row before content-sized, equal-height Save and Use
 current buttons, in that order, in both languages. Use current fills only the draft;
 Save validates and commits it. Suggestions join the input edge-to-edge at its exact
-width, excluding both button columns. The input has a single bottom accent while focused and
+width, excluding both button columns. The popover expands downward from the input
+edge and collapses with a height transition; reduced motion opens and closes it
+immediately. The input reserves the same border geometry in both states, has a single bottom accent while focused and
 returns to neutral on blur. The popup stays above the existing footer and scrolls
 internally without increasing panel height. Empty and failed lookups explain their
 state, and Retry is keyboard-accessible. The shortcut never saves or connects implicitly.
@@ -131,7 +137,7 @@ shield at the right edge. Missing configuration, another network, disconnects,
 pauses and guard errors never activate this protection indicator. The existing
 backend matching result governs this status; display labels are not compared.
 
-The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.1.4/docs/features/tray-shell.md) owns the tray lifecycle, placement, DWM styling and motion; its UI package supplies the shell, status card, pause, language and about controls. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
+The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.1.5/docs/features/tray-shell.md) owns the tray lifecycle, placement, transparent host and motion; its UI package supplies the shell, status card, pause, language and about controls. The panel stays at the work-area bottom-right and slides from the right; height changes grow upward around a stationary footer. Browser previews use the same anchor. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
 
 An observed connection to the configured target uses Wi-Fi arcs and a loop mark. An absent target, including reconnecting and waiting to retry, uses an exclamation mark; an unconfigured or unreadable target uses the same mark while preserving its status and error text. Pause replaces the mark with two bars and takes precedence over other icon states. The flyout begins directly with the current-network card. Artwork is optically centered and enlarged together for both taskbar sizes; the arcs and three approved marks retain their shapes. No state uses opacity or a no-internet slash. A missing target says “Choose a network to keep”; an absent target names it and explains automatic retries, while unreadable observations retain the existing error text. The current-network card remains distinct from the target's reconnect state. Inter and common assets come from the tagged UI package; Chinese font subsets include both shared and app text.
 

@@ -1,8 +1,8 @@
-# Homing
-
-A quiet way back to your Wi-Fi.
-
-[简体中文](README_zh-Hans.md)
+<div align="center">
+  <h1>Homing</h1>
+  <p>A quiet way back to your Wi-Fi.</p>
+  <p>English | <a href="README_zh-Hans.md">简体中文</a></p>
+</div>
 
 Homing keeps a saved Windows Wi-Fi network within reach. When its name disappears
 from the observed network names, Homing asks Windows to reconnect. WLAN notifications
@@ -12,8 +12,8 @@ Its small tray flyout shows the current network, reconnect state, and last
 reconnect request. The gear opens settings for the saved network, a pause of
 1–720 minutes, and English or Simplified Chinese. Theme and accent follow Windows.
 The loop-marked tray icon distinguishes Homing from Windows Wi-Fi and follows taskbar size.
-The flyout centers above a taskbar icon, or slides into the notification corner
-from a hidden icon. Windows supplies its shadow and corners. Outside clicks, Escape
+The flyout slides from the right into the bottom-right corner of the current screen,
+with a steady footer as content expands upward or collapses downward. Linen supplies its shared shadow and corners. Outside clicks, Escape
 and another tray click dismiss it; Animation effects off makes changes instant.
 
 ## Install
@@ -26,7 +26,7 @@ Download the Windows x64 portable archive from [Releases](https://github.com/Hez
 verify it against `SHA256SUMS`, and extract it. Keep WebView2 installed. Saving a target enables automatic reconnect.
 Login startup remains with your startup manager.
 
-## Build
+### Build
 
 Windows 11, Rust's MSVC toolchain with Visual Studio C++ Build Tools, Node.js LTS,
 Microsoft Edge WebView2 and [Vite+](https://viteplus.dev/guide/) are required.
@@ -42,7 +42,7 @@ vp exec tauri build --ci --no-bundle -- --locked
 The portable executable is `src-tauri/target/release/homing.exe`. Homing leaves
 login startup to your startup manager, such as Lineup.
 
-### Use with an agent
+## Use with an agent
 
 Give this prompt to an agent that can build Windows software:
 

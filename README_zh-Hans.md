@@ -1,8 +1,8 @@
-# Homing
-
-让 Wi-Fi 静静归来。
-
-[English](README.md)
+<div align="center">
+  <h1>Homing</h1>
+  <p>让 Wi-Fi 静静归来。</p>
+  <p><a href="README.md">English</a> | 简体中文</p>
+</div>
 
 Homing 守候你已保存的 Windows Wi-Fi。已观测的网络名称中找不到指定名称时，它便请
 Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定时器处理。
@@ -10,7 +10,7 @@ Windows 重新连接。平时由 WLAN 通知唤醒，重试和暂停到期由定
 小巧的托盘面板展示当前网络、重连状态与上次重连请求的时间。齿轮后的设置可填写
 网络、选择 1–720 分钟的暂停时长，以及英语或简体中文。主题与强调色跟随
 Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任务栏尺寸。
-任务栏图标的面板居中显示在图标上方，隐藏图标则从屏幕侧边滑入通知区角落。阴影与圆角由 Windows 绘制；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
+浮窗统一从右侧滑入当前屏幕的右下角，内容向上展开、向下收起，暂停与设置底栏保持原位。阴影与圆角沿用 Linen 的共享样式；点击外部、按 Esc 或再次点击图标都会关闭面板。关闭系统动画时立即切换。
 
 ## 安装
 
@@ -20,6 +20,19 @@ Windows。带循环标记的托盘图标便于区分系统 Wi-Fi，并跟随任�
 从[发布页](https://github.com/Hezric/Homing/releases/latest)下载 Windows x64 便携包，
 对照 `SHA256SUMS` 校验后解压，并保留 WebView2。保存目标后即启用自动重连。
 登录启动交给已有启动管理器。
+
+## 交给智能体
+
+将下面这段话交给能够构建 Windows 软件的智能体：
+
+```text
+从 https://github.com/Hezric/Homing/releases/latest 安装 Homing。
+对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在，先不启动。
+保留已有设置和登录启动登记。说明保存目标或使用已有目标会启用 Wi-Fi 重连，激活前取得授权。
+通过我已有的 Skill 管理方式安装 skills/homing。若没有，请先询问，建议使用
+Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-labs/skills，
+要求 Node.js 22.20 及以上）。也要确认安装后 Skill 的位置和完整内容。
+```
 
 ## 构建
 
@@ -35,19 +48,6 @@ vp exec tauri build --ci --no-bundle -- --locked
 ```
 
 便携程序位于 `src-tauri/target/release/homing.exe`。登录启动交给 Lineup 等启动管理器。
-
-### 交给智能体
-
-将下面这段话交给能够构建 Windows 软件的智能体：
-
-```text
-从 https://github.com/Hezric/Homing/releases/latest 安装 Homing。
-对照 SHA256SUMS 校验 Windows x64 便携包，解压并确认 homing.exe 存在，先不启动。
-保留已有设置和登录启动登记。说明保存目标或使用已有目标会启用 Wi-Fi 重连，激活前取得授权。
-通过我已有的 Skill 管理方式安装 skills/homing。若没有，请先询问，建议使用
-Vercel skills CLI：npx skills add Hezric/Homing -g（https://github.com/vercel-labs/skills，
-要求 Node.js 22.20 及以上）。也要确认安装后 Skill 的位置和完整内容。
-```
 
 ## 使用
 

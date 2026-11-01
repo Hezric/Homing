@@ -65,7 +65,7 @@ if (!native && ["light", "dark"].includes(params.get("theme")))
 const root = document.querySelector("#app");
 root.innerHTML = flyout({
   name: "Homing",
-  card: statusCard(`<span id="protection-shield" aria-hidden="true" hidden>${icon("shield_checkmark", 16, true)}</span>`),
+  card: statusCard(`<span id="protection-shield" class="status-shield" aria-hidden="true" hidden>${icon("shield_checkmark", 16, true)}</span>`),
   main: `<section id="network-view"><div class="device-heading"><h1 id="reconnect-label"></h1><span id="mode" class="mode"></span></div><section class="device-list" aria-labelledby="reconnect-label"><div class="device-row"><span class="device-icon">${icon("wifi_1", 20)}</span><span id="target-label" class="row-label"></span><span class="device-name row-value" id="target"></span></div><div class="device-row"><span class="device-icon">${icon("arrow_sync", 16)}</span><span id="last-label" class="row-label"></span><time class="device-name row-value" id="last"></time></div></section><div id="setup-wrap" class="message" aria-hidden="true"><div><p id="setup" class="setup"></p></div></div></section>`,
   settings: `<div id="profile-picker"></div>${pauseSettings()}${languageSettings("Homing", version, icon("open", 24))}`,
   gear: icon("settings", 24),
@@ -88,10 +88,8 @@ function render() {
   const views = document.querySelector("#views"),
     before = views.getBoundingClientRect().height;
   const previousView = views.querySelector(":scope > section:not([hidden])");
-  const outgoing =
-    previousView && previousView.id !== (settingsOpen ? "settings" : "network-view")
-      ? previousView.cloneNode(true)
-      : null;
+  const viewChanged =
+    previousView && previousView.id !== (settingsOpen ? "settings" : "network-view");
   if (!native) language = state.languageMode === "system" ? systemLanguage : state.languageMode;
   const t = text[language],
     paused = state.pauseRemaining > 0,
@@ -192,7 +190,7 @@ function render() {
   setMessage("error", !!(state.error || localError));
   if (state.error || localError) setText(error, localError || `${t.attention}. ${state.error}`);
   document.querySelector("#github").setAttribute("aria-label", t.github);
-  animateView(before, outgoing);
+  animateView(before, viewChanged);
   requestAnimationFrame(fit);
 }
 let pending = Promise.resolve();
@@ -275,7 +273,7 @@ document.addEventListener("keydown", (event) => {
         .animate(
           [
             { opacity: 1, transform: "none" },
-            { opacity: 0, transform: "translateY(12px)" },
+            { opacity: 0, transform: "translateX(calc(100% + var(--flyout-gap)))" },
           ],
           motion,
         )
@@ -312,11 +310,10 @@ if (native) {
   await new Promise(requestAnimationFrame);
   await invoke("present_flyout");
   document.body.classList.add("presented");
-  new ResizeObserver(fit).observe(root.querySelector(".flyout"));
 } else if (!reducedMotion.matches)
   root.querySelector(".flyout").animate(
     [
-      { opacity: 0, transform: "translateY(12px)" },
+      { opacity: 0, transform: "translateX(calc(100% + var(--flyout-gap)))" },
       { opacity: 1, transform: "none" },
     ],
     motion,
