@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1]
+
+### Fixes
+
+- restore radio-off and network-switch recovery (#19)
+
+- consume native geometry and shared surface (#21)
+
 ## [0.4.0]
 
 ### Features
