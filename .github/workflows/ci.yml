@@ -14,13 +14,25 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  scope:
+    uses: Hezric/Linen/.github/workflows/change-scope.yml@v0.2.0
+    with:
+      documentation-files: |
+        AGENTS.md
+        CONTRIBUTING.md
+        docs/features/wifi-reconnect.md
+        docs/features/build-cache.md
   verify:
-    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.1.5
+    needs: scope
+    if: needs.scope.outputs.docs-only != 'true'
+    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.2.0
     with:
       manifest: src-tauri/Cargo.toml
       frontend: true
       build-command: vp exec tauri build --ci --no-bundle -- --locked
   browser:
+    needs: scope
+    if: needs.scope.outputs.docs-only != 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -52,6 +64,8 @@ jobs:
             src-tauri/icons/
             src-tauri/src/tray_assets.rs
   build-cache:
+    needs: scope
+    if: needs.scope.outputs.docs-only != 'true'
     runs-on: windows-latest
     timeout-minutes: 5
     steps:
@@ -59,15 +73,21 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: pwsh -NoProfile -File scripts/test-build-cache.ps1
   test:
-    needs: [verify, browser, build-cache]
+    needs: [scope, verify, browser, build-cache]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: test '${{ needs.verify.result }}' = success
-      - run: test '${{ needs.build-cache.result }}' = success
-      - run: test '${{ needs.browser.result }}' = success
+      - env:
+          DOCS_ONLY: ${{ needs.scope.outputs.docs-only }}
+        run: |
+          test '${{ needs.scope.result }}' = success
+          expected=success
+          if [[ "$DOCS_ONLY" == true ]]; then expected=skipped; fi
+          for result in '${{ needs.verify.result }}' '${{ needs.browser.result }}' '${{ needs.build-cache.result }}'; do
+            test "$result" = "$expected"
+          done
   policy-check:
-    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.5
+    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.2.0
   policy:
     needs: policy-check
     if: always()
