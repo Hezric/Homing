@@ -33,4 +33,8 @@ When whole-repository closeout is explicitly requested, inventory every open iss
 Release only on explicit user instruction. The single `Release due` issue is advisory: security/breaking change, five user-visible changes, or one after 30 days. Merge product changes separately, using descriptive scoped Conventional Commit PR titles and implementation details in the PR body. Keep `chore(release): vX.Y.Z` PRs and commits limited to version bumps, changelog updates and lockfile version fields; preserve merged history. Use git-cliff with `cliff.toml` and update the version fields in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` together. After the tested squash merge, verify its signature and create a signed annotated immutable `vX.Y.Z` tag. The release workflow validates the source, builds portable archives with dependency notices, and publishes changelog notes and SHA256. Verify the downloaded artifacts and signatures before reporting a release.
 
 
-Shared shell, UI and build tooling come from the GitHub-tagged [Linen](https://github.com/Hezric/Linen) packages. Keep audio/network state here; fix shared shell behavior at its library owner. Frontend commands run through Vite+; use `vp exec tauri build --ci --no-bundle -- --locked` for the production binary.
+Shared shell, UI and build tooling come from the GitHub-tagged [Linen](https://github.com/Hezric/Linen) packages. Keep audio/network state here; fix shared shell behavior at its library owner. Frontend commands run through Vite+; use `vp run build:app` for the production binary.
+
+## Local build cache
+
+Run local Cargo and Tauri build/check/test commands through `pwsh -NoProfile -File scripts/with-build-cache.ps1 <tool> <arguments>`. See [build cache](docs/features/build-cache.md); final binaries keep their usual paths.

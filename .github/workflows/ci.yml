@@ -51,12 +51,20 @@ jobs:
             assets/tray-*.svg
             src-tauri/icons/
             src-tauri/src/tray_assets.rs
+  build-cache:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pwsh -NoProfile -File scripts/test-build-cache.ps1
   test:
-    needs: [verify, browser]
+    needs: [verify, browser, build-cache]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - run: test '${{ needs.verify.result }}' = success
+      - run: test '${{ needs.build-cache.result }}' = success
       - run: test '${{ needs.browser.result }}' = success
   policy-check:
     uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.1.5
