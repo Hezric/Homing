@@ -15,7 +15,7 @@
   "dependencies": {
     "@fontsource-variable/noto-sans-sc": "^5.3.1",
     "@tauri-apps/api": "^2.12.4",
-    "linen-ui": "git+https://github.com/Hezric/Linen.git#2caed18c7578cd000b384dc36f73d7a41d8c2952"
+    "linen-ui": "git+https://github.com/Hezric/Linen.git#65465acb18b4f3207c335e8ee28056ab627835fd"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
