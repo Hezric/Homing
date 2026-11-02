@@ -5,6 +5,9 @@
   <p>English | <a href="README_zh-Hans.md">简体中文</a></p>
 </div>
 
+<p align="center"><img src="docs/images/flyout.png" width="864" alt="Homing flyout in light and dark themes"><br><sub>Browser preview with simulated networks. Windows uses its native material.</sub></p>
+
+
 Homing keeps a saved Windows Wi-Fi network within reach. When the target is absent, it asks Windows to reconnect; a small tray flyout shows the connection and lets you pause.
 
 ## Install

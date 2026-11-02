@@ -35,6 +35,9 @@ foreach ($readme in @('README.md','README_zh-Hans.md')) {
     $text = $text.Replace('](https://github.com/Hezric/Homing/blob/main/LICENSE)','](licenses/THIRD-PARTY-LICENSES.html)').Replace('](https://github.com/Hezric/Homing/blob/main/THIRD-PARTY-NOTICES.md)','](licenses/THIRD-PARTY-NOTICES.md)')
     [IO.File]::WriteAllText((Join-Path $packageRoot $readme), $text, $encoding)
 }
+$imageRoot = Join-Path $packageRoot 'docs/images'
+New-Item -ItemType Directory -Force -Path $imageRoot | Out-Null
+Copy-Item -LiteralPath 'docs/images/flyout.png' -Destination $imageRoot
 $archive = Join-Path $projectRoot "dist/Homing-$version-windows-x64.zip"
 Compress-Archive -LiteralPath $packageRoot -DestinationPath $archive -Force
 Write-Output $archive

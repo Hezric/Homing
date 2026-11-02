@@ -5,6 +5,9 @@
   <p><a href="README.md">English</a> | 简体中文</p>
 </div>
 
+<p align="center"><img src="docs/images/flyout.png" width="864" alt="Homing 浅色与深色浮窗"><br><sub>使用模拟网络的浏览器预览；Windows 中使用原生材质。</sub></p>
+
+
 Homing 守候 Windows 中已保存的 Wi-Fi。目标网络不在时，它会请系统重新连接；小小的托盘面板可以查看连接状态，也可以暂停守护。
 
 ## 安装
