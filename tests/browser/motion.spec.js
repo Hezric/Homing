@@ -61,14 +61,14 @@ test("native resize replies keep the footer at the same simulated screen coordin
   await page.setViewportSize({ width: 360, height: 400 });
   let canvasReady = false;
   await page.exposeFunction("resizeViewport", async (height, reserve, settled) => {
-    if (!canvasReady) {canvasReady = true; await page.setViewportSize({width:401,height:620});}
+    if (!canvasReady) {canvasReady = true; await page.setViewportSize({width:405,height:620});}
     await new Promise(resolve => setTimeout(resolve, 64));
     await page.evaluate(({height, reserve, settled}) => {
-      window.nativeHostHeight = Math.min(579, Math.ceil(height));
-      const wanted = Math.min(620, Math.ceil(Math.max(height, reserve || height)) + 41);
+      window.nativeHostHeight = Math.min(575, Math.ceil(height));
+      const wanted = Math.min(620, Math.ceil(Math.max(height, reserve || height)) + 45);
       window.nativeRegionHeight = settled ? wanted : Math.max(window.nativeRegionHeight || 0, wanted);
     }, {height, reserve, settled});
-    return { limit: 579 };
+    return { limit: 575 };
   });
   await page.addInitScript(({ state, catalog }) => {
     window.isTauri = true;

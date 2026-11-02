@@ -321,6 +321,7 @@ if (native) {
 motionReady = true;
 // Only the visible countdown ticks; native expiration belongs to the worker.
 setInterval(() => {
+  if (native) fit(true).catch(console.error);
   if (state.pauseRemaining > 0) {
     state.pauseRemaining--;
     render();
