@@ -1963,7 +1963,7 @@ dependencies = [
 [[package]]
 name = "linen-tray"
 version = "0.1.8"
-source = "git+https://github.com/Hezric/Linen.git?rev=79e3dc7d74e5b86c825465d54e566ad94a30418c#79e3dc7d74e5b86c825465d54e566ad94a30418c"
+source = "git+https://github.com/Hezric/Linen.git?tag=v0.1.8#3bf0a54cca371d441b896dc0cb735d50fa68c72b"
 dependencies = [
  "serde",
  "tauri",
