@@ -24,6 +24,7 @@ export function mockSavedNetworks(mode = "") {
       : [
           "Home Wi-Fi",
           "Office Wi-Fi",
+          "Guest Wi-Fi",
           "家里的网络",
           "<Office & Guest>",
           "Long" + "W".repeat(28),

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2]
+
+### Fixes
+
+- keep native material active during flyout transitions with Linen 0.1.7
+
+- align icon weight and add presentation checks
+
 ## [0.4.1]
 
 ### Fixes
