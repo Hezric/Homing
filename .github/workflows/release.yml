@@ -11,6 +11,7 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: Hezric/Linen/.github/workflows/windows-release.yml@v0.1.5
+    uses: Hezric/Linen/.github/workflows/windows-release.yml@v0.2.0
     with:
       tag: ${{ inputs.tag || github.ref_name }}
+      version-fields: '{"package.json":[".version"],"package-lock.json":[".version",".packages[\"\"].version"],"src-tauri/Cargo.toml":[".package.version"],"src-tauri/Cargo.lock":[".package[] | select(.name == \"homing\") | .version"],"src-tauri/tauri.conf.json":[".version"]}'
