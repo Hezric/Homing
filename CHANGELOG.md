@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.4]
+
+### Fixes
+
+- show status-only tooltips (#29)
+
 ## [0.4.3]
 
 ### Fixes
