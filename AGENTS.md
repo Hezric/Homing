@@ -22,6 +22,8 @@ Dependabot keeps native branch names; only its branch-name check is exempt. Week
 
 Keep progress in Git and Issues, current behavior in `docs/features/`, canonical language in `GLOSSARY.md` only when needed, and consequential architectural rationale in `docs/adr/` only when a real decision needs preserving.
 
+Before native tooltip, material, motion or update-retention checks, read [Linen tray verification](https://github.com/Hezric/Linen/blob/main/docs/verification.md).
+
 ## Delivery closeout
 
 Finish authorized integration, release, distribution, installation and readback before ending. Close completed issues with evidence, safely remove owned temporary branches and test resources by exact identity, and synchronize both READMEs with the delivered result. Confirm merged PRs or main reachability before branch deletion; preserve unmerged work and unrelated resources.
