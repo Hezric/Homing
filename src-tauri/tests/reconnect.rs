@@ -133,8 +133,8 @@ fn accepted_requests_verify_after_one_second_and_failed_requests_wait_sixty_one(
         );
         assert_eq!(
             guard.deadline(deadline * 1000),
-            None,
-            "connected state must not poll"
+            Some(deadline * 1000 + 1000),
+            "healthy checks must survive early or missing notifications"
         );
         assert_eq!(
             guard.state(deadline * 1000).last_reconnect,
@@ -246,7 +246,7 @@ fn query_failure_clears_stale_network_and_blocks_pending_retries() {
     assert!(guard.state(1000).error.unwrap().contains("Query failed"));
 }
 #[test]
-fn unavailable_notifications_use_legacy_observation_timer_and_stop_after_recovery() {
+fn notification_registration_recovery_clears_errors_without_stopping_healthy_checks() {
     let mut guard = guard();
     let mut wifi = Simulated {
         notifications_unavailable: true,
@@ -266,7 +266,7 @@ fn unavailable_notifications_use_legacy_observation_timer_and_stop_after_recover
         .contains("Notifications unavailable"));
     wifi.notifications_unavailable = false;
     guard.reconcile(&mut wifi, || 1000, 1001);
-    assert_eq!(guard.deadline(1000), None);
+    assert_eq!(guard.deadline(1000), Some(2000));
     assert!(guard.state(1000).error.is_none());
     wifi.notifications_unavailable = true;
     wifi.network = Network::default();
@@ -354,4 +354,35 @@ fn restoring_a_legacy_display_name_does_not_change_its_matching_or_settings() {
     assert!(!serde_json::to_string(&guard.state(0))
         .unwrap()
         .contains("\"Home\""));
+}
+
+#[test]
+fn early_notification_does_not_strand_guard_on_another_network() {
+    for settled in [
+        Network {
+            current: Some("Away".into()),
+            interface_text: "Away".into(),
+        },
+        Network::default(),
+    ] {
+        let mut guard = guard();
+        let mut wifi = Simulated {
+            network: Network {
+                current: Some("Home".into()),
+                interface_text: "Home".into(),
+            },
+            ..Default::default()
+        };
+        guard.reconcile(&mut wifi, || 0, 1000);
+        // ACM can fire before NLM/IP Helper settles, so its callback still sees Home.
+        guard.reconcile(&mut wifi, || 10, 1000);
+        wifi.network = settled;
+        let deadline = guard
+            .deadline(10)
+            .expect("a settled-state check must follow an early notification");
+        assert!(deadline <= 1010);
+        guard.reconcile(&mut wifi, || deadline, 1001);
+        assert_eq!(wifi.requests, ["Home"]);
+        assert_eq!(guard.state(deadline).connection, Connection::Reconnecting);
+    }
 }
