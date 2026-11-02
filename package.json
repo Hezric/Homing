@@ -1,6 +1,6 @@
 {
   "name": "homing",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
   "dependencies": {
     "@fontsource-variable/noto-sans-sc": "^5.3.1",
     "@tauri-apps/api": "^2.12.4",
-    "linen-ui": "git+https://github.com/Hezric/Linen.git#129578f8d2add974830fcb70cc8e2c5388a32fca"
+    "linen-ui": "git+https://github.com/Hezric/Linen.git#v0.1.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
