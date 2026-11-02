@@ -1433,7 +1433,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "homing"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "linen-tray",
  "serde",
@@ -1963,7 +1963,7 @@ dependencies = [
 [[package]]
 name = "linen-tray"
 version = "0.1.8"
-source = "git+https://github.com/Hezric/Linen.git?rev=d58a89b41ada4cf477ed2db70045eddab37eae1b#d58a89b41ada4cf477ed2db70045eddab37eae1b"
+source = "git+https://github.com/Hezric/Linen.git?rev=79e3dc7d74e5b86c825465d54e566ad94a30418c#79e3dc7d74e5b86c825465d54e566ad94a30418c"
 dependencies = [
  "serde",
  "tauri",
