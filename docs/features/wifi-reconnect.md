@@ -68,7 +68,7 @@ expiry also reconciles without needing a notification. The default is 60 minutes
 valid saved values are whole minutes from 1 to 720. Editing the saved duration
 preserves the active deadline. Pauses and reconnect timestamps are session state.
 
-`%APPDATA%\Homing\Homing.toml` is a TOML file with `profile`, `network`,
+By default, `%APPDATA%\Homing\Homing.toml` is a TOML file with `profile`, `network`,
 `language` and `pause_minutes` fields. Profile and network names are ordinary
 quoted UTF-8 strings; the profile retains the internal Windows connection identity
 and the network is the visible SSID. Language is system, en, or zh. Missing files
@@ -173,10 +173,20 @@ light/dark, English/Chinese, connected, reconnecting, can’t-reach, unreadable 
 
 Scoop installations retain the existing `current` startup entry and use Linen's
 [persisted runtime route](https://github.com/Hezric/Linen/blob/v0.1.9/docs/features/tray-shell.md)
-to keep the physical tray executable path stable across updates. Settings remain
-in their existing APPDATA location. The first migration may require placing the
+to keep the physical tray executable path stable across updates. Scoop enables portable mode in the persisted runtime. Settings live in
+`persist/homing/runtime/data/Homing.toml`; WebView2 data uses
+the sibling `data/webview` directory. The first portable update copies an existing
+APPDATA settings file only when no portable file exists, leaving the original
+in place. Later updates preserve portable settings. Neither app self-updates. The first migration may require placing the
 new tray identity once; Windows tray preferences are never rewritten.
 
 Tray hover tooltips show only the current status in English or Simplified Chinese,
 without the application name or a dash prefix. Before the first status arrives,
 the tooltip is unset.
+
+To enable portable mode outside Scoop, stop the app, back up the APPDATA settings,
+copy them to `data/Homing.toml` beside the executable, and create an empty file named
+`portable` beside that executable. Existing portable settings take precedence;
+removing the marker selects APPDATA again. Portable mode does not suppress the
+app's audio or network behavior. The marker and data belong beside the running
+executable, which is the persisted runtime for Scoop installations.

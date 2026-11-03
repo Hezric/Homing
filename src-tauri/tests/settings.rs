@@ -246,3 +246,35 @@ pause_minutes = 45
     assert_eq!(Settings::parse(&settings.encode()).unwrap(), settings);
     assert!(Settings::parse("[Settings]\nProfileHex=486f6d65").is_err());
 }
+
+#[cfg(windows)]
+#[test]
+fn portable_settings_preserve_the_legacy_copy_and_save_beside_the_runtime() {
+    let root = std::env::temp_dir().join(format!("homing-portable-{}", std::process::id()));
+    std::fs::create_dir(&root).unwrap();
+    let checked = std::panic::catch_unwind(|| -> Result<(), Box<dyn std::error::Error>> {
+        let roaming = root.join("roaming");
+        let executable = root.join("应用/runtime/homing.exe");
+        std::fs::create_dir_all(executable.parent().unwrap())?;
+        let legacy = linen_tray::settings_path(&executable, Some(roaming.as_os_str()), "Homing")?;
+        let original = Settings::parse("profile=\"Home profile\"\nnetwork=\"Home\"\nlanguage=\"zh\"\npause_minutes=45\n")?;
+        original.save(&legacy)?;
+        let original_bytes = std::fs::read(&legacy)?;
+        std::fs::write(executable.parent().unwrap().join("portable"), b"")?;
+        let portable = linen_tray::settings_path(&executable, Some(roaming.as_os_str()), "Homing")?;
+        assert_eq!(portable, root.join("应用/runtime/data/Homing.toml"));
+        std::fs::create_dir_all(portable.parent().unwrap())?;
+        std::fs::copy(&legacy, &portable)?;
+        let (mut loaded, error) = Settings::load(&portable);
+        assert!(error.is_none());
+        assert_eq!(loaded, original);
+        loaded.pause_minutes = 90;
+        loaded.save(&portable)?;
+        assert_eq!(Settings::load(&portable).0, loaded);
+        assert_eq!(std::fs::read(&legacy)?, original_bytes);
+        assert_eq!(Settings::load(&legacy).0, original);
+        Ok(())
+    });
+    std::fs::remove_dir_all(root).unwrap();
+    checked.unwrap().unwrap();
+}
