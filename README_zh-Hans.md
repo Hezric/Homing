@@ -35,7 +35,9 @@ npx skills add Hezric/Homing -g（Vercel skills CLI，https://github.com/vercel-
 
 ## 使用
 
-单击托盘图标，打开设置，选择 Windows 已保存的网络。**使用当前**只填入草稿，点击**保存**才生效并启用重连。匹配已观测网络名称时区分大小写，按子串匹配：`Home` 也会匹配 `MyHome5G`。Windows 的软件 Wi-Fi 开关关闭时，Homing 会尝试先开启再重连。硬件开关与全局飞行模式仍由你控制。Homing 不扫描网络，也不索要密码。暂停会停止重连请求，重启后恢复。设置保存在 `%APPDATA%\Homing\Homing.toml`。
+单击托盘图标，打开设置，选择 Windows 已保存的网络。**使用当前**只填入草稿，点击**保存**才生效并启用重连。匹配已观测网络名称时区分大小写，按子串匹配：`Home` 也会匹配 `MyHome5G`。Windows 的软件 Wi-Fi 开关关闭时，Homing 会尝试先开启再重连。硬件开关与全局飞行模式仍由你控制。Homing 不扫描网络，也不索要密码。暂停会停止重连请求，重启后恢复。设置默认保存在 `%APPDATA%\Homing\Homing.toml`。
+
+Scoop 会自动启用便携数据。手动使用时，先停止程序，在 exe 旁建立空文件 `portable`，设置便会改用旁边的 `data/Homing.toml`。迁移现有设置前请阅读下方行为说明。
 
 [使用与行为](https://github.com/Hezric/Homing/blob/main/docs/features/wifi-reconnect.md) · [参与贡献与自动化测试](https://github.com/Hezric/Homing/blob/main/CONTRIBUTING.md) · [MIT 许可](https://github.com/Hezric/Homing/blob/main/LICENSE) · [第三方声明](https://github.com/Hezric/Homing/blob/main/THIRD-PARTY-NOTICES.md)
 
