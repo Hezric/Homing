@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0]
+
+### Features
+
+- support portable application data
+
+
+### Fixes
+
+- bound cargo caches per checkout
+
 ## [0.4.4]
 
 ### Fixes

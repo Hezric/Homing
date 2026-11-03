@@ -257,7 +257,9 @@ fn portable_settings_preserve_the_legacy_copy_and_save_beside_the_runtime() {
         let executable = root.join("应用/runtime/homing.exe");
         std::fs::create_dir_all(executable.parent().unwrap())?;
         let legacy = linen_tray::settings_path(&executable, Some(roaming.as_os_str()), "Homing")?;
-        let original = Settings::parse("profile=\"Home profile\"\nnetwork=\"Home\"\nlanguage=\"zh\"\npause_minutes=45\n")?;
+        let original = Settings::parse(
+            "profile=\"Home profile\"\nnetwork=\"Home\"\nlanguage=\"zh\"\npause_minutes=45\n",
+        )?;
         original.save(&legacy)?;
         let original_bytes = std::fs::read(&legacy)?;
         std::fs::write(executable.parent().unwrap().join("portable"), b"")?;
