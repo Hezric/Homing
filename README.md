@@ -36,7 +36,7 @@ https://github.com/vercel-labs/skills; Node.js 22.20+). Verify its path and cont
 
 ## Use
 
-Click the tray icon, open settings and choose a network already saved in Windows. **Use current** fills the draft; **Save** applies it and enables reconnect. Matching is a case-sensitive substring of observed network names; `Home` also matches `MyHome5G`. If Windows turns off the software Wi-Fi radio, Homing tries to enable it before reconnecting. Hardware switches and global airplane mode remain under your control. Homing does not scan for networks or request passwords. Pause stops reconnect requests; restarting resumes them. Settings default to `%APPDATA%\Homing\Homing.toml`.
+Click the tray icon, open settings and choose a network already saved in Windows. Repeated clicks during opening keep the pending flyout open; a click after opening completes closes it. **Use current** fills the draft; **Save** applies it and enables reconnect. Matching is a case-sensitive substring of observed network names; `Home` also matches `MyHome5G`. If Windows turns off the software Wi-Fi radio, Homing tries to enable it before reconnecting. Hardware switches and global airplane mode remain under your control. Homing does not scan for networks or request passwords. Pause stops reconnect requests; restarting resumes them. Settings default to `%APPDATA%\Homing\Homing.toml`.
 
 Scoop enables portable data automatically. Outside Scoop, stop the app and create an empty `portable` file beside the executable; settings then use `data/Homing.toml`. See the behavior guide below before migrating existing settings.
 

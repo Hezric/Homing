@@ -150,7 +150,7 @@ shield at the right edge. Missing configuration, another network, disconnects,
 pauses and guard errors never activate this protection indicator. The existing
 backend matching result governs this status; display labels are not compared.
 
-The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.3.0/docs/features/tray-shell.md) owns the tray lifecycle, placement, transparent host and motion; its UI package supplies the shell, status card, pause, language and about controls. The panel stays at the work-area bottom-right and slides from the right; height changes grow upward around a stationary footer. Open panels refresh desktop geometry on the existing one-second UI tick, including unchanged content; each reopening resolves geometry again. Browser previews use the same anchor. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
+The shared [Linen shell](https://github.com/Hezric/Linen/blob/v0.3.1/docs/features/tray-shell.md) owns the tray lifecycle, placement, transparent host and motion; its UI package supplies the shell, status card, pause, language and about controls. The panel stays at the work-area bottom-right and slides from the right; height changes grow upward around a stationary footer. Open panels refresh desktop geometry on the existing one-second UI tick, including unchanged content; each reopening resolves geometry again. Browser previews use the same anchor. The application retains network state, target editing and backend operations. English and Simplified Chinese follow Windows unless explicitly selected. Browser mock mode cannot call Wi-Fi.
 
 An observed connection to the configured target uses Wi-Fi arcs and a loop mark. An absent target, including reconnecting and waiting to retry, uses an exclamation mark; an unconfigured or unreadable target uses the same mark while preserving its status and error text. Pause replaces the mark with two bars and takes precedence over other icon states. The flyout begins directly with the current-network card. Artwork is optically centered and enlarged together for both taskbar sizes; the arcs and three approved marks retain their shapes. All states use a lighter stroke calibrated beside Segoe Fluent system icons at 16–48 physical pixels, for normal and small taskbars. No state uses opacity or a no-internet slash. A missing target says “Choose a network to keep”; an absent target names it and explains automatic retries, while unreadable observations retain the existing error text. The current-network card remains distinct from the target's reconnect state. Inter and common assets come from the tagged UI package; Chinese font subsets include both shared and app text.
 
@@ -172,7 +172,7 @@ those tests on a network carrying remote sessions. Browser screenshots verify
 light/dark, English/Chinese, connected, reconnecting, can’t-reach, unreadable and paused states, and settings without network changes.
 
 Scoop installations retain the existing `current` startup entry and use Linen's
-[persisted runtime route](https://github.com/Hezric/Linen/blob/v0.3.0/docs/features/tray-shell.md)
+[persisted runtime route](https://github.com/Hezric/Linen/blob/v0.3.1/docs/features/tray-shell.md)
 to keep the physical tray executable path stable across updates. Scoop enables portable mode in the persisted runtime. Settings live in
 `persist/homing/runtime/data/Homing.toml`; WebView2 data uses
 the sibling `data/webview` directory. The first portable update copies an existing
@@ -188,3 +188,7 @@ copy them to `data/Homing.toml` beside the executable, and create an empty file 
 `portable` beside that executable. Existing portable settings take precedence;
 removing the marker selects APPDATA again. Portable mode does not disable Wi-Fi monitoring or configured reconnects. The marker and data belong beside the running
 executable, which is the persisted runtime for Scoop installations.
+
+Tray clicks during initialization and entry retain the pending opening; after
+presentation a click closes it. The shared Linen lifecycle consumes clicks during
+exit and excludes the tray icon from outside-click dismissal.

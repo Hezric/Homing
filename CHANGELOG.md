@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.1]
+
+### Fixes
+
+- retain rapid-click flyout openings
+
 ## [0.5.0]
 
 ### Features
