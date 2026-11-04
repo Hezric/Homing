@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.2]
+
+### Fixes
+
+- preserve right-click menus during entry
+
 ## [0.5.1]
 
 ### Fixes
