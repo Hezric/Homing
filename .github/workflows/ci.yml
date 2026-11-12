@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   scope:
-    uses: Hezric/Linen/.github/workflows/change-scope.yml@v0.2.0
+    uses: Hezric/Linen/.github/workflows/change-scope.yml@v0.3.2
     with:
       documentation-files: |
         AGENTS.md
@@ -25,7 +25,7 @@ jobs:
   verify:
     needs: scope
     if: needs.scope.outputs.docs-only != 'true'
-    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.2.0
+    uses: Hezric/Linen/.github/workflows/windows-checks.yml@v0.3.2
     with:
       manifest: src-tauri/Cargo.toml
       frontend: true
@@ -87,7 +87,7 @@ jobs:
             test "$result" = "$expected"
           done
   policy-check:
-    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.2.0
+    uses: Hezric/Linen/.github/workflows/project-policy.yml@v0.3.2
   policy:
     needs: policy-check
     if: always()
